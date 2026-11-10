@@ -109,8 +109,7 @@ El proyecto adopta un enfoque *Cloud Native* mediante:
 Se implementa **GitHub Flow** para soportar el ciclo de entrega continua:
 
 * `main`: Rama protegida de producción. Cada *merge* aprobado dispara el despliegue automático a Azure App Service.
-* `develop`: Rama de integración donde se ejecutan pruebas en entornos de *Staging*.
-* `feature/[nombre]`: Ramas cortas creadas desde `develop` para la construcción de nuevos endpoints, componentes o configuraciones.
+* `feature/[nombre]`: Ramas cortas creadas desde `main` para la construcción de nuevos endpoints, componentes o configuraciones. Se integran mediante *Pull Request* con revisión de un compañero y pruebas en verde.
 
 ---
 
