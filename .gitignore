@@ -31,4 +31,3 @@ Thumbs.db
 crash.log
 *.tfvars
 *.example
-.terraform.lock.hcl
