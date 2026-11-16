@@ -1,0 +1,35 @@
+variable "resource_group_name" {
+  description = "Nombre del Resource Group en Azure"
+  type        = string
+  default     = "rg-timecheck"
+}
+
+variable "location" {
+  description = "Región de Azure"
+  type        = string
+  default     = "centralus"
+}
+
+variable "server_name" {
+  description = "Nombre único del servidor PostgreSQL (letras minúsculas, números y guiones)"
+  type        = string
+  default     = "timecheck-db-server"
+}
+
+variable "db_name" {
+  description = "Nombre de la base de datos inicial"
+  type        = string
+  default     = "timecheck"
+}
+
+variable "admin_username" {
+  description = "Usuario administrador de PostgreSQL"
+  type        = string
+  default     = "timecheck_admin"
+}
+
+variable "admin_password" {
+  description = "Contraseña del administrador"
+  type        = string
+  sensitive   = true
+}
