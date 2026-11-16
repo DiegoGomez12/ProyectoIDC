@@ -23,6 +23,16 @@ Siguiendo las directrices de seguridad y la metodología **12-Factor App**:
 2. **Aislamiento por desarrollador:** Cada integrante configura sus credenciales en su archivo local `.env`, el cual se encuentra estrictamente ignorado por el control de versiones (`.gitignore`).
 3. **Mapeo de puertos:** El puerto `5432` únicamente escucha peticiones en la interfaz local de la máquina del desarrollador (`localhost`), sin exposición a redes externas.
 
+### 3.1. Plantilla de variables para `.env` local
+Crear un archivo `.env` en la raíz del proyecto con la siguiente estructura:
+
+```env
+POSTGRES_DB=timecheck_db
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=tu_password_local
+DB_PORT=5432
+```
+
 ---
 
 ## 4. Guía de Operación para Desarrolladores
