@@ -1,0 +1,31 @@
+services:
+  # Servicio de Base de Datos para Desarrollo Local
+  db:
+    image: postgres:15-alpine
+    container_name: timecheck-db-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - timecheck-network
+
+volumes:
+  # Volumen persistente para no perder datos al apagar el contenedor
+  postgres_data:
+    driver: local
+
+networks:
+  # Red compartida donde luego se conectarán el Backend y Frontend
+  timecheck-network:
+    driver: bridge
