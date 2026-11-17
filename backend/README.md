@@ -69,7 +69,7 @@ docker exec -it timecheck-db-local psql -U <USUARIO> -d <BASE_DE_DATOS> -c "UPDA
 - **`app.js` separado de `server.js`:** Supertest prueba la app sin abrir un puerto.
 - **El `.env` vive en la raíz:** lo comparten Docker Compose y el backend; `config/env.js` lo busca ahí. Si no existe (por ejemplo, en Docker), se usan las variables del entorno.
 - **`DB_SSL`:** `false` en local y `true` en Azure, porque Azure exige SSL.
-- - **Modelo simulado (mock) en pruebas:** los tests no dependen de PostgreSQL, así el CI corre sin base de datos.
+- **Modelo simulado (mock) en pruebas:** los tests no dependen de PostgreSQL, así el CI corre sin base de datos.
 - **`bcryptjs`:** cifra contraseñas sin compilar código nativo (funciona igual en Windows y en Alpine/Docker).
 - **JWT con `{ id, rol }`:** `autenticar` valida el token y `soloAdmin` restringe por rol.
 - **Login con mensaje genérico:** si falla el email o la contraseña se responde igual ("Credenciales inválidas"), para no revelar qué emails existen.
