@@ -11,6 +11,23 @@ Origen: Issue #4
 5. `npm run dev`: servidor con recarga automática → `http://localhost:3000/health`
 6. `npm test`: pruebas (no necesitan base de datos).
 
+## Ejecución con Docker (Issue #2)
+El backend cuenta con un `Dockerfile` multi-stage optimizado (`node:24-alpine`) con dependencias de producción aisladas y usuario no privilegiado (`node`).
+
+### 1. Construir la imagen
+Desde la raíz del repositorio:
+```bash
+docker build -t timecheck-api ./backend
+```
+
+### 2. Correr el contenedor
+Para conectar el contenedor local al PostgreSQL que corre en Docker Compose, se utiliza `host.docker.internal`:
+```bash
+docker run --rm -p 3000:3000 --env-file .env -e DB_HOST=host.docker.internal timecheck-api
+```
+
+Probar salud de la API: `http://localhost:3000/health`
+
 ## Estructura
 ```text
 backend/
