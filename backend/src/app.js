@@ -7,7 +7,9 @@ app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-// PR B: aquí se agregan las rutas de /api/auth y /api/usuarios
+
+app.use('/api/auth', require('./routes/auth.routes'));
+app.use('/api/usuarios', require('./routes/usuarios.routes'));
 
 // Manejador de errores central (Express 5 manda aquí los errores de funciones async)
 app.use((err, req, res, next) => {
