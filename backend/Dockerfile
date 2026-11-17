@@ -1,7 +1,7 @@
 # ==========================================
 # Etapa 1: Dependencias de Producción
 # ==========================================
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 # ==========================================
 # Etapa 2: Imagen Final de Producción (Runtime)
 # ==========================================
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 

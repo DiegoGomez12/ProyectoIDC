@@ -1,15 +1,19 @@
 # ==========================================
 # Etapa 1: Construcción (Build) de la SPA
 # ==========================================
-FROM node:20-alpine AS build
+FROM node:24-alpine AS build
 
 WORKDIR /app
 
-# Copiar manifiesto de dependencias
-COPY package.json ./
+# Argumento de compilación para la URL de la API (permite inyectarla en Azure / CI/CD)
+ARG VITE_API_URL=http://localhost:3000
+ENV VITE_API_URL=$VITE_API_URL
 
-# Instalar dependencias
-RUN npm install
+# Copiar manifiestos de dependencias
+COPY package.json package-lock.json ./
+
+# Instalación estricta y reproducible de dependencias
+RUN npm ci
 
 # Copiar código fuente
 COPY . .

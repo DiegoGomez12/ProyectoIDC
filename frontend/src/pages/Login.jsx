@@ -62,9 +62,6 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
             lineHeight: '1.4'
           }}>
             ⚠️ {error}
-            <div style={{ fontSize: '0.75rem', marginTop: '0.35rem', color: '#dc2626' }}>
-              Tip: Para iniciar sesión con la API real, el backend debe estar corriendo. O usa el acceso rápido Demo abajo.
-            </div>
           </div>
         )}
 
@@ -135,34 +132,37 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
           </button>
         </form>
 
-        <div style={{
-          marginTop: '1.75rem',
-          paddingTop: '1.25rem',
-          borderTop: '1px solid #f1f5f9',
-          textAlign: 'center'
-        }}>
-          <button
-            onClick={onDemoAccess}
-            type="button"
-            style={{
-              width: '100%',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #cbd5e1',
-              color: '#334155',
-              padding: '0.65rem',
-              borderRadius: '10px',
-              fontSize: '0.875rem',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
-            }}
-          >
-            <span>⚡</span> Acceder como Usuario de Prueba (Sin Base de Datos)
-          </button>
-        </div>
+        {/* Solo visible en entorno de desarrollo local (npm run dev) o con VITE_ENABLE_DEMO=true */}
+        {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_DEMO === 'true') && (
+          <div style={{
+            marginTop: '1.75rem',
+            paddingTop: '1.25rem',
+            borderTop: '1px solid #f1f5f9',
+            textAlign: 'center'
+          }}>
+            <button
+              onClick={onDemoAccess}
+              type="button"
+              style={{
+                width: '100%',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #cbd5e1',
+                color: '#334155',
+                padding: '0.65rem',
+                borderRadius: '10px',
+                fontSize: '0.875rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              <span>⚡</span> [Dev] Acceso de prueba (Sin Base de Datos)
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
