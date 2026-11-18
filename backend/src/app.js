@@ -10,6 +10,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/usuarios', require('./routes/usuarios.routes'));
+app.use('/api/asistencias', require('./routes/asistencias.routes'));
 
 // Manejador de errores central (Express 5 manda aquí los errores de funciones async)
 app.use((err, req, res, next) => {
