@@ -42,7 +42,7 @@ backend/
 │   ├── models/          # Consultas SQL (nunca devuelven password_hash, salvo para login)
 │   ├── controllers/     # Lógica de cada endpoint y validaciones
 │   ├── middlewares/     # autenticar (JWT) y soloAdmin (rol)
-│   └── routes/          # URL → middleware → controlador
+│   ├── routes/          # URL → middleware → controlador
 │   └── utils/           # Funciones puras (cálculo de horas trabajadas)
 └── tests/               # Pruebas con Jest + Supertest (el modelo se simula)
 ```
