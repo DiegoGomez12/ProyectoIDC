@@ -47,6 +47,8 @@ backend/
 ```
 
 ## Endpoints
+
+### Usuarios y Autenticación
 | Método | Ruta | Quién | Qué hace |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/usuarios` | Público | Registro; siempre crea con rol empleado |
@@ -55,6 +57,15 @@ backend/
 | `GET` | `/api/usuarios/:id` | Admin o el mismo usuario | Obtiene uno |
 | `PUT` | `/api/usuarios/:id` | Admin o el mismo usuario | Edita (solo el admin puede cambiar rol) |
 | `DELETE` | `/api/usuarios/:id` | Admin | Elimina |
+
+### Asistencias (Issue #5)
+| Método | Ruta | Quién | Qué hace |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/asistencias/check-in` | Autenticado | Registra entrada. Error 400 si ya existe jornada activa sin check-out |
+| `POST` | `/api/asistencias/check-out` | Autenticado | Registra salida y calcula horas trabajadas. Error 400 si no hay jornada activa |
+| `GET` | `/api/asistencias/mis-registros` | Autenticado | Devuelve el historial propio de asistencias y horas trabajadas |
+| `GET` | `/api/asistencias/estado` | Autenticado | Devuelve `{ tieneCheckInActivo, registroActivo }` para el frontend |
+| `GET` | `/api/asistencias` | Admin | Lista general de asistencias (filtros opcionales: `?fecha=YYYY-MM-DD`, `?usuarioId=UUID`) |
 
 ### Crear el primer admin
 El registro siempre crea usuarios `empleado`. Para tener el primer admin, registra un usuario normal y cámbiale el rol en la base:
