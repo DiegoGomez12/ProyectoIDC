@@ -8,8 +8,8 @@ Aplicación de interfaz de usuario Single Page Application (SPA) desarrollada co
 
 Esta base proporciona la arquitectura inicial para que el equipo pueda continuar con la **Fase 4** del proyecto sin cerrar prematuramente los issues funcionales:
 
-* **Issue #2 (Infraestructura / Este PR):** Dockerfile multi-stage (`node:24-alpine` para build y `nginx:alpine` para runtime) con soporte de inyección de `VITE_API_URL`, instalación reproducible vía `npm ci`, y configuración de servidor Nginx para rutas SPA (`nginx.conf`).
-* **Base para Issue #9 (Autenticación / Login):** Vistas y servicios en `src/pages/Login.jsx` y `src/api/auth.js` listos para conectarse al endpoint `/api/auth/login` y `/api/usuarios`. *(El Issue #9 permanece abierto).*
+* **Issue #2 (Infraestructura):** Dockerfile multi-stage (`node:24-alpine` para build y `nginx:alpine` para runtime) con soporte de inyección de `VITE_API_URL`, instalación reproducible vía `npm ci`, y configuración de servidor Nginx para rutas SPA (`nginx.conf`).
+* **Issue #9 (Autenticación / Login - Implementado):** Módulo completo de autenticación con selector de pestañas (Iniciar Sesión y Crear Cuenta de Empleado), validaciones de cliente (email, longitud mínima de 8 caracteres y confirmación de contraseña), visibilidad toggle de password, manejo de estado de carga, alertas de error y persistencia de sesión JWT en `localStorage`.
 * **Base para Issue #10 (Dashboard Asistencias):** Vista en `src/pages/Dashboard.jsx` con panel de registro de jornada y tabla de horas.  
   > ⚠️ **Nota de alcance:** El Dashboard actualmente utiliza **datos de ejemplo simulados** (no llama a la API real de asistencias) y **no cuenta todavía con pruebas unitarias en React Testing Library**. La suite de pruebas y la integración completa con la API corresponden al **Issue #10**, el cual permanece abierto.
 
@@ -80,7 +80,7 @@ Acceder en el navegador a `http://localhost:8080`.
 
 ---
 
-## 🌐 Variables de Entorno y Build Args
+## Variables de Entorno y Build Args
 
 | Variable / Build Arg | Descripción | Valor por defecto |
 |---|---|---|
