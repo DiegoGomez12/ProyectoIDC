@@ -14,8 +14,18 @@ exports.checkIn = async (req, res) => {
     });
   }
 
-  const nuevoRegistro = await Asistencia.registrarEntrada(usuarioId);
-  res.status(201).json(nuevoRegistro);
+  try {
+    const nuevoRegistro = await Asistencia.registrarEntrada(usuarioId);
+    res.status(201).json(nuevoRegistro);
+  } catch (err) {
+    // El índice único de la BD detectó otra jornada activa (dos check-in casi simultáneos)
+    if (err.code === '23505') {
+      return res.status(400).json({
+        error: 'Ya cuentas con una jornada activa sin registrar salida'
+      });
+    }
+    throw err;
+  }
 };
 
 /**

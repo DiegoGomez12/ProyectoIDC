@@ -94,6 +94,21 @@ describe('POST /api/asistencias/check-out', () => {
     expect(res.body.horas_trabajadas).toBe(8.0);
     expect(Asistencia.registrarSalida).toHaveBeenCalledWith('a-activa-99');
   });
+
+    test('400 si la BD detecta otra jornada activa (dos check-in simultáneos)', async () => {
+    Asistencia.obtenerActivaPorUsuario.mockResolvedValue(null);
+    Asistencia.registrarEntrada.mockRejectedValue(
+      Object.assign(new Error('duplicate key'), { code: '23505' })
+    );
+
+    const res = await request(app)
+      .post('/api/asistencias/check-in')
+      .set('Authorization', `Bearer ${tokenDe('empleado')}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/jornada activa sin registrar salida/i);
+  });
+
 });
 
 describe('GET /api/asistencias/mis-registros', () => {

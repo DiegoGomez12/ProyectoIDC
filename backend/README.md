@@ -42,7 +42,8 @@ backend/
 │   ├── models/          # Consultas SQL (nunca devuelven password_hash, salvo para login)
 │   ├── controllers/     # Lógica de cada endpoint y validaciones
 │   ├── middlewares/     # autenticar (JWT) y soloAdmin (rol)
-│   └── routes/          # URL → middleware → controlador
+│   ├── routes/          # URL → middleware → controlador
+│   └── utils/           # Funciones puras (cálculo de horas trabajadas)
 └── tests/               # Pruebas con Jest + Supertest (el modelo se simula)
 ```
 
@@ -85,6 +86,8 @@ docker exec -it timecheck-db-local psql -U <USUARIO> -d <BASE_DE_DATOS> -c "UPDA
 - **JWT con `{ id, rol }`:** `autenticar` valida el token y `soloAdmin` restringe por rol.
 - **Login con mensaje genérico:** si falla el email o la contraseña se responde igual ("Credenciales inválidas"), para no revelar qué emails existen.
 - **Registro siempre como `empleado`:** solo un admin puede cambiar roles.
+- **Horas calculadas en JS (`src/utils/tiempo.js`), no en SQL:** se prueba con Jest sin base de datos, siempre devuelve un número (Postgres `NUMERIC` llega a Node como texto) y resta instantes UTC, así que no la afectan las zonas horarias ni el horario de verano.
+- **Una sola jornada activa por usuario, garantizado por la BD:** índice único parcial en `asistencias`; si llegan dos check-in al mismo tiempo, el segundo responde 400.
 
 ## Variables de entorno
 Se agregan al mismo `.env` de la raíz que usa Docker Compose.
@@ -107,3 +110,23 @@ CLIENT_URL=http://localhost:5173
 | `JWT_SECRET`, `JWT_EXPIRES_IN` | Firma y duración del token  |
 | `CLIENT_URL` | Origen permitido por CORS (frontend) |
 
+## Pruebas
+`npm test` corre todo con Jest + Supertest, sin base de datos (el modelo o el pool se simulan).
+
+| Archivo | Qué cubre |
+|---|---|
+| `tests/health.test.js` | Endpoint `/health` |
+| `tests/usuarios.test.js` | Registro, permisos por rol y login con JWT |
+| `tests/asistencias.test.js` | Check-in / check-out y reglas de negocio (no doble entrada, no salida sin entrada) |
+| `tests/asistencia.model.test.js` | El modelo devuelve `horas_trabajadas` como número, o `null` si la jornada sigue activa |
+| `tests/tiempo.test.js` | Cálculo de horas: redondeo, zonas horarias, medianoche, horario de verano y errores (Issue #6) |
+
+## Docker
+Imagen de producción (multi-stage, solo dependencias de producción, usuario no root):
+
+```bash
+docker build -t timecheck-api ./backend
+docker run --rm -p 3000:3000 --env-file .env -e DB_HOST=host.docker.internal timecheck-api
+```
+
+`DB_HOST=host.docker.internal` permite que el contenedor llegue al Postgres de `docker compose` que corre en tu máquina.
