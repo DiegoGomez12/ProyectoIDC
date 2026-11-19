@@ -1,7 +1,7 @@
 # Integración Continua (GitHub Actions)
 
 Pipeline que ejecuta las pruebas automáticamente para que nada se integre a `main` sin pasar la suite.
-Origen: Issue #7 · PR <número>
+Origen: Issue #7 · PR #22 · Issue #8 · PR #23
 
 ## ¿Cuándo corre?
 - En cada **Pull Request** hacia `main`.
@@ -13,7 +13,7 @@ Origen: Issue #7 · PR <número>
 | `Backend - pruebas` | Instala Node 24, `npm ci` y `npm test` en `backend/` (Jest + Supertest). |
 | `Docker - Build y Push` | Compila las imágenes de Backend (`timecheck-api`) y Frontend (`timecheck-web`) con Buildx. En PR valida compilación; en `main` se autentica y sube a Docker Hub. |
 
-Las pruebas del backend no usan base de datos (el modelo se simula), por eso el pipeline no necesita Postgres ni secrets.
+Las pruebas del backend no usan base de datos (el modelo se simula), por eso el job de pruebas no necesita Postgres ni secrets. El job de Docker sí usa los secrets de Docker Hub (ver abajo).
 
 ## Secretos requeridos (Docker Hub)
 En `Settings > Secrets and variables > Actions`:
