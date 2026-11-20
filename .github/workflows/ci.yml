@@ -76,6 +76,25 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-web:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-web:${{ github.sha }}
+
+  deploy:
+    name: Deploy - Azure App Service
+    needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar Webhook de Backend (timecheck-api)
+        env:
+          WEBHOOK_URL: ${{ secrets.AZURE_API_WEBHOOK_URL }}
+        run: curl --fail -sS -X POST "$WEBHOOK_URL"
+
+      - name: Disparar Webhook de Frontend (timecheck-web)
+        env:
+          WEBHOOK_URL: ${{ secrets.AZURE_WEB_WEBHOOK_URL }}
+        run: curl --fail -sS -X POST "$WEBHOOK_URL"

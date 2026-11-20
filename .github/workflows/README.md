@@ -1,24 +1,31 @@
-# Integración Continua (GitHub Actions)
+# Integración y Despliegue Continuo (GitHub Actions)
 
-Pipeline que ejecuta las pruebas automáticamente para que nada se integre a `main` sin pasar la suite.
-Origen: Issue #7 · PR #22 · Issue #8 · PR #23
+Pipeline que ejecuta las pruebas automáticamente, construye y sube las imágenes a Docker Hub, y despliega a Azure App Service con aprobación manual a producción.
+Origen: Issue #7 · PR #22 · Issue #8 · PR #23 · Issue #12
 
 ## ¿Cuándo corre?
-- En cada **Pull Request** hacia `main`.
-- En cada **push a `main`** (después de un merge), para confirmar que `main` sigue en verde.
+- En cada **Pull Request** hacia `main`: ejecuta pruebas y valida el build de ambas imágenes Docker (sin subir ni desplegar).
+- En cada **push a `main`** (después de un merge): ejecuta pruebas, publica imágenes en Docker Hub y solicita aprobación manual para desplegar a Azure.
 
 ## Jobs
 | Job | Qué hace |
 |---|---|
 | `Backend - pruebas` | Instala Node 24, `npm ci` y `npm test` en `backend/` (Jest + Supertest). |
-| `Docker - Build y Push` | Compila las imágenes de Backend (`timecheck-api`) y Frontend (`timecheck-web`) con Buildx. En PR valida compilación; en `main` se autentica y sube a Docker Hub. |
+| `Docker - Build y Push` | Compila las imágenes de Backend (`timecheck-api`) y Frontend (`timecheck-web`, inyectando `VITE_API_URL`) con Buildx. En PR valida compilación; en `main` se autentica y sube a Docker Hub. |
+| `Deploy - Azure App Service` | Solo corre en `main` tras `docker`. Pausa esperando aprobación manual en el ambiente `production` y luego dispara los Webhooks de Azure App Service para actualizar Backend y Frontend. |
 
-Las pruebas del backend no usan base de datos (el modelo se simula), por eso el job de pruebas no necesita Postgres ni secrets. El job de Docker sí usa los secrets de Docker Hub (ver abajo).
+Las pruebas del backend no usan base de datos (el modelo se simula), por eso el job de pruebas no necesita Postgres ni secrets. Los jobs de Docker y Deploy usan los secrets y variables configurados en el repositorio (ver abajo).
 
-## Secretos requeridos (Docker Hub)
+## Secretos y Variables requeridos
 En `Settings > Secrets and variables > Actions`:
-- `DOCKERHUB_USERNAME`: usuario de Docker Hub.
-- `DOCKERHUB_TOKEN`: token de acceso personal con permisos de lectura y escritura.
+- **Secrets (Repository):**
+  - `DOCKERHUB_USERNAME`: usuario de Docker Hub.
+  - `DOCKERHUB_TOKEN`: token de acceso personal con permisos de lectura y escritura.
+- **Variables (Repository):**
+  - `VITE_API_URL`: URL pública del backend en Azure (`https://timecheck-api-equipo-idc.azurewebsites.net`), inyectada como `build-arg` al compilar el frontend.
+- **Environment `production` (`Settings > Environments > production`, con *Required reviewers*):**
+  - `AZURE_API_WEBHOOK_URL`: URL del webhook de despliegue continuo del App Service del backend.
+  - `AZURE_WEB_WEBHOOK_URL`: URL del webhook de despliegue continuo del App Service del frontend.
 
 ## Decisiones
 - **`npm ci` + caché de npm:** instalación reproducible desde `package-lock.json` y rápida entre corridas.

@@ -33,6 +33,9 @@ resource "azurerm_postgresql_flexible_server" "postgres" {
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
   auto_grow_enabled            = false
+    lifecycle {
+    ignore_changes = [zone]
+  }
 }
 
 # Base de datos inicial
@@ -49,4 +52,66 @@ resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure" {
   server_id        = azurerm_postgresql_flexible_server.postgres.id
   start_ip_address = "0.0.0.0"
   end_ip_address   = "0.0.0.0"
+}
+
+# App Service Plan (Linux)
+resource "azurerm_service_plan" "asp" {
+  name                = "asp-timecheck"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = "westus2"
+  os_type             = "Linux"
+  sku_name            = "B1" # Nivel básico compatible con contenedores
+}
+
+# App Service: Backend (timecheck-api)
+resource "azurerm_linux_web_app" "backend" {
+  name                = var.api_app_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = "westus2"
+  service_plan_id     = azurerm_service_plan.asp.id
+
+  site_config {
+    always_on = true
+    application_stack {
+      docker_image_name   = "${var.dockerhub_username}/timecheck-api:latest"
+      docker_registry_url = "https://index.docker.io"
+    }
+  }
+
+  app_settings = {
+    DOCKER_ENABLE_CI     = "true"
+    WEBSITES_PORT        = "3000"
+    NODE_ENV             = "production"
+    PORT                 = "3000"
+    DB_HOST              = azurerm_postgresql_flexible_server.postgres.fqdn
+    DB_PORT              = "5432"
+    POSTGRES_DB          = azurerm_postgresql_flexible_server_database.db.name
+    POSTGRES_USER        = var.admin_username
+    POSTGRES_PASSWORD    = var.admin_password
+    DB_SSL               = "true"
+    JWT_SECRET           = var.jwt_secret
+    JWT_EXPIRES_IN       = var.jwt_expires_in
+    CLIENT_URL           = "https://${var.web_app_name}.azurewebsites.net"
+  }
+}
+
+# App Service: Frontend (timecheck-web)
+resource "azurerm_linux_web_app" "frontend" {
+  name                = var.web_app_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = "westus2"
+  service_plan_id     = azurerm_service_plan.asp.id
+
+  site_config {
+    always_on = true
+    application_stack {
+      docker_image_name   = "${var.dockerhub_username}/timecheck-web:latest"
+      docker_registry_url = "https://index.docker.io"
+    }
+  }
+
+  app_settings = {
+    DOCKER_ENABLE_CI = "true"
+    WEBSITES_PORT    = "80"
+  }
 }
