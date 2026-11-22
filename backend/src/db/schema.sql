@@ -17,3 +17,8 @@ CREATE TABLE IF NOT EXISTS asistencias (
                 CHECK (estatus IN ('activo', 'completado')),
   creado_en     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Garantiza en la BD que un usuario no tenga dos jornadas activas al mismo tiempo
+CREATE UNIQUE INDEX IF NOT EXISTS asistencias_una_activa_por_usuario
+  ON asistencias (usuario_id)
+  WHERE estatus = 'activo';
