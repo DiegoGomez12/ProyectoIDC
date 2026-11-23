@@ -1,13 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { obtenerMisAsistencias, registrarEntrada, registrarSalida } from '../api/asistencias';
+import { formatearFecha, formatearHora, horasDeLaSemana } from '../utils/asistencias';
 
-export default function Dashboard({ usuario }) {
-  const [tieneCheckInActivo, setTieneCheckInActivo] = useState(false);
+export default function Dashboard({ usuario, onLogout }) {
+  const [registros, setRegistros] = useState([]);
+  const [carga, setCarga] = useState('cargando'); // 'cargando' | 'lista' | 'error'
+  const [enviando, setEnviando] = useState(false);
   const [mensaje, setMensaje] = useState('');
+  const [error, setError] = useState(null);
   const [horaActual, setHoraActual] = useState(new Date().toLocaleTimeString());
-  const [registros, setRegistros] = useState([
-    { id: 1, fecha: '16/11/2026', entrada: '09:00 AM', salida: '05:30 PM', horas: '8.5', estatus: 'Completado' },
-    { id: 2, fecha: '15/11/2026', entrada: '08:55 AM', salida: '05:00 PM', horas: '8.0', estatus: 'Completado' }
-  ]);
+
+  // El estado sale de los datos de la API: así sigue correcto aunque se recargue la página
+  const tieneCheckInActivo = registros.some((r) => r.estatus === 'activo');
+  const sesionExpirada = error?.status === 401;
+
+  const cargarRegistros = useCallback(async () => {
+    setCarga('cargando');
+    setError(null);
+    try {
+      setRegistros(await obtenerMisAsistencias());
+      setCarga('lista');
+    } catch (err) {
+      setError(err);
+      setCarga('error');
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarRegistros();
+  }, [cargarRegistros]);
 
   // Reloj en tiempo real
   useEffect(() => {
@@ -17,28 +38,28 @@ export default function Dashboard({ usuario }) {
     return () => clearInterval(timer);
   }, []);
 
-  const handleCheckIn = () => {
-    const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setTieneCheckInActivo(true);
-    setMensaje(`Entrada registrada con éxito a las ${hora}`);
+  // Envía la marca y actualiza la tabla con el registro que devuelve la API
+  const marcar = async (accion, textoExito) => {
+    setEnviando(true);
+    setMensaje('');
+    setError(null);
+    try {
+      const registro = await accion();
+      setRegistros((previos) => [registro, ...previos.filter((r) => r.id !== registro.id)]);
+      setMensaje(textoExito(registro));
+    } catch (err) {
+      setError(err);
+    } finally {
+      setEnviando(false);
+    }
   };
 
-  const handleCheckOut = () => {
-    const hora = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setTieneCheckInActivo(false);
-    setMensaje(`Salida registrada con éxito a las ${hora}`);
-    
-    // Agregar registro a la tabla
-    const nuevoRegistro = {
-      id: Date.now(),
-      fecha: new Date().toLocaleDateString(),
-      entrada: '09:00 AM',
-      salida: hora,
-      horas: '8.0',
-      estatus: 'Completado'
-    };
-    setRegistros([nuevoRegistro, ...registros]);
-  };
+  const handleCheckIn = () =>
+    marcar(registrarEntrada, (r) => `Entrada registrada a las ${formatearHora(r.hora_entrada)}`);
+
+  const handleCheckOut = () =>
+    marcar(registrarSalida, (r) =>
+      `Salida registrada a las ${formatearHora(r.hora_salida)} (${r.horas_trabajadas} hrs)`);
 
   return (
     <div style={{
@@ -100,6 +121,39 @@ export default function Dashboard({ usuario }) {
         </div>
       )}
 
+      {error && (
+        <div role="alert" style={{
+          backgroundColor: '#fef2f2',
+          color: '#991b1b',
+          border: '1px solid #fecaca',
+          padding: '0.85rem 1.25rem',
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+          fontWeight: '600',
+          fontSize: '0.9rem',
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '0.75rem'
+        }}>
+          <span>{sesionExpirada ? 'Tu sesión expiró o no es válida.' : error.message}</span>
+          <button
+            onClick={sesionExpirada ? onLogout : cargarRegistros}
+            style={{
+              backgroundColor: '#ffffff',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '8px',
+              fontWeight: '700',
+              cursor: 'pointer'
+            }}
+          >
+            {sesionExpirada ? 'Iniciar sesión' : 'Reintentar'}
+          </button>
+        </div>
+      )}
+
       {/* Tarjetas de Métricas Rápidas */}
       <div style={{
         display: 'grid',
@@ -141,7 +195,7 @@ export default function Dashboard({ usuario }) {
             Horas Acumuladas
           </span>
           <div style={{ fontSize: '1.35rem', fontWeight: '700', color: '#0f172a', marginTop: '0.35rem' }}>
-            16.5 <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>hrs esta semana</span>
+            {horasDeLaSemana(registros)} <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '500' }}>hrs esta semana</span>
           </div>
         </div>
 
@@ -180,12 +234,16 @@ export default function Dashboard({ usuario }) {
 
         {/* Renderizado condicional estricto: Check-out solo visible/activo tras Check-in */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-          {!tieneCheckInActivo ? (
+          {carga === 'cargando' && <span>Cargando...</span>}
+
+          {carga === 'lista' && (!tieneCheckInActivo ? (
             <button
               onClick={handleCheckIn}
+              disabled={enviando}
               id="btn-checkin"
               style={{
                 backgroundColor: '#16a34a',
+                opacity: enviando ? 0.6 : 1,
                 color: '#ffffff',
                 border: 'none',
                 padding: '0.9rem 2.25rem',
@@ -205,9 +263,11 @@ export default function Dashboard({ usuario }) {
           ) : (
             <button
               onClick={handleCheckOut}
+              disabled={enviando}
               id="btn-checkout"
               style={{
                 backgroundColor: '#dc2626',
+                opacity: enviando ? 0.6 : 1,
                 color: '#ffffff',
                 border: 'none',
                 padding: '0.9rem 2.25rem',
@@ -224,7 +284,7 @@ export default function Dashboard({ usuario }) {
             >
               <span>📤</span> Registrar Salida (Check-out)
             </button>
-          )}
+          ))}
         </div>
       </div>
 
@@ -252,12 +312,17 @@ export default function Dashboard({ usuario }) {
               </tr>
             </thead>
             <tbody>
+              {carga === 'lista' && registros.length === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '0.85rem', color: '#64748b' }}>Aún no tienes registros.</td>
+                </tr>
+              )}
               {registros.map((r) => (
                 <tr key={r.id} style={{ borderBottom: '1px solid #f8fafc', fontSize: '0.9rem' }}>
-                  <td style={{ padding: '0.85rem', fontWeight: '600', color: '#1e293b' }}>{r.fecha}</td>
-                  <td style={{ padding: '0.85rem', color: '#16a34a', fontWeight: '500' }}>{r.entrada}</td>
-                  <td style={{ padding: '0.85rem', color: '#dc2626', fontWeight: '500' }}>{r.salida}</td>
-                  <td style={{ padding: '0.85rem', fontWeight: '700', color: '#0f172a' }}>{r.horas} hrs</td>
+                  <td style={{ padding: '0.85rem', fontWeight: '600', color: '#1e293b' }}>{formatearFecha(r.hora_entrada)}</td>
+                  <td style={{ padding: '0.85rem', color: '#16a34a', fontWeight: '500' }}>{formatearHora(r.hora_entrada)}</td>
+                  <td style={{ padding: '0.85rem', color: '#dc2626', fontWeight: '500' }}>{formatearHora(r.hora_salida)}</td>
+                  <td style={{ padding: '0.85rem', fontWeight: '700', color: '#0f172a' }}>{r.horas_trabajadas === null ? '—' : `${r.horas_trabajadas} hrs`}</td>
                   <td style={{ padding: '0.85rem' }}>
                     <span style={{
                       backgroundColor: '#dcfce7',
@@ -267,7 +332,7 @@ export default function Dashboard({ usuario }) {
                       fontSize: '0.75rem',
                       fontWeight: '700'
                     }}>
-                      {r.estatus}
+                      {r.estatus === 'activo' ? 'En curso' : 'Completado'}
                     </span>
                   </td>
                 </tr>

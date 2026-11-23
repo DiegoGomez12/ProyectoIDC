@@ -12,6 +12,7 @@ Origen: Issue #7 · PR #22 · Issue #8 · PR #23
 |---|---|
 | `Backend - pruebas` | Instala Node 24, `npm ci` y `npm test` en `backend/` (Jest + Supertest). |
 | `Docker - Build y Push` | Compila las imágenes de Backend (`timecheck-api`) y Frontend (`timecheck-web`) con Buildx. En PR valida compilación; en `main` se autentica y sube a Docker Hub. |
+| `Frontend - pruebas` | Instala Node 24, `npm ci` y `npm test` en `frontend/` (Vitest + React Testing Library). |
 
 Las pruebas del backend no usan base de datos (el modelo se simula), por eso el job de pruebas no necesita Postgres ni secrets. El job de Docker sí usa los secrets de Docker Hub (ver abajo).
 
@@ -25,7 +26,7 @@ En `Settings > Secrets and variables > Actions`:
 - **`permissions: contents: read`:** el pipeline solo lee el repo (mínimo privilegio).
 - **`concurrency`:** si llegan commits nuevos al mismo PR, se cancela la corrida anterior.
 - **Check obligatorio:** en la protección de `main` está marcado `Backend - pruebas` como requerido; si falla, GitHub bloquea el merge.
-- **`needs: backend`:** no construye ni sube imágenes si las pruebas fallan.
+- **`needs: [backend, frontend]`:** no construye ni sube imágenes si las pruebas fallan.
 - **Doble etiqueta (tags):** cada imagen se sube con `:latest` y con el SHA del commit.
 
 ## Cómo ver los resultados

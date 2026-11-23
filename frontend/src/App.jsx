@@ -53,7 +53,7 @@ export default function App() {
       {!usuario ? (
         <Login onLoginSuccess={handleLoginSuccess} onDemoAccess={handleDemoAccess} />
       ) : (
-        <Dashboard usuario={usuario} />
+        <Dashboard usuario={usuario} onLogout={handleLogout} />
       )}
     </div>
   );
