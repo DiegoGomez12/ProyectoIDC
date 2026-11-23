@@ -100,5 +100,6 @@ Acceder en el navegador a `http://localhost:8080`.
 |---|---|
 | `src/pages/Dashboard.test.jsx` | Botones Check-in/Check-out, errores, doble clic y sesión expirada |
 | `src/utils/asistencias.test.js` | Inicio de semana, suma de horas y formato |
+| `src/api/asistencias.test.js` | Token, errores de la API, respuestas que no son JSON y falta de conexión |
 
 Se usa Vitest 3 y jest-dom 6 porque las versiones más nuevas requieren Vite 6 o superior.

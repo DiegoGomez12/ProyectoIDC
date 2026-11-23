@@ -20,9 +20,10 @@ async function peticion(ruta, method = 'GET') {
     throw new Error('No se pudo conectar con el servidor.');
   }
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data.error || 'Ocurrió un error en el servidor.');
+  // null = la respuesta no es JSON (por ejemplo, una página HTML de error)
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data === null) {
+    const error = new Error(data?.error || 'Ocurrió un error en el servidor.');
     error.status = response.status;
     throw error;
   }
