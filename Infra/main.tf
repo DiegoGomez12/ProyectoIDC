@@ -33,7 +33,7 @@ resource "azurerm_postgresql_flexible_server" "postgres" {
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
   auto_grow_enabled            = false
-    lifecycle {
+  lifecycle {
     ignore_changes = [zone]
   }
 }
@@ -69,6 +69,7 @@ resource "azurerm_linux_web_app" "backend" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = "westus2"
   service_plan_id     = azurerm_service_plan.asp.id
+  https_only          = true
 
   site_config {
     always_on = true
@@ -79,19 +80,19 @@ resource "azurerm_linux_web_app" "backend" {
   }
 
   app_settings = {
-    DOCKER_ENABLE_CI     = "true"
-    WEBSITES_PORT        = "3000"
-    NODE_ENV             = "production"
-    PORT                 = "3000"
-    DB_HOST              = azurerm_postgresql_flexible_server.postgres.fqdn
-    DB_PORT              = "5432"
-    POSTGRES_DB          = azurerm_postgresql_flexible_server_database.db.name
-    POSTGRES_USER        = var.admin_username
-    POSTGRES_PASSWORD    = var.admin_password
-    DB_SSL               = "true"
-    JWT_SECRET           = var.jwt_secret
-    JWT_EXPIRES_IN       = var.jwt_expires_in
-    CLIENT_URL           = "https://${var.web_app_name}.azurewebsites.net"
+    DOCKER_ENABLE_CI  = "true"
+    WEBSITES_PORT     = "3000"
+    NODE_ENV          = "production"
+    PORT              = "3000"
+    DB_HOST           = azurerm_postgresql_flexible_server.postgres.fqdn
+    DB_PORT           = "5432"
+    POSTGRES_DB       = azurerm_postgresql_flexible_server_database.db.name
+    POSTGRES_USER     = var.admin_username
+    POSTGRES_PASSWORD = var.admin_password
+    DB_SSL            = "true"
+    JWT_SECRET        = var.jwt_secret
+    JWT_EXPIRES_IN    = var.jwt_expires_in
+    CLIENT_URL        = "https://${var.web_app_name}.azurewebsites.net"
   }
 }
 
@@ -101,6 +102,7 @@ resource "azurerm_linux_web_app" "frontend" {
   resource_group_name = azurerm_resource_group.rg.name
   location            = "westus2"
   service_plan_id     = azurerm_service_plan.asp.id
+  https_only          = true
 
   site_config {
     always_on = true

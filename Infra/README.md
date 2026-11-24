@@ -43,7 +43,8 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
    * Las credenciales sensibles están parametrizadas en variables de Terraform con el modificador `sensitive = true`, evitando su exposición en texto plano en logs de consola.
    * Los archivos locales con valores reales (`*.tfvars`), archivos de entorno (`.env`) y los archivos de estado (`*.tfstate`) se encuentran estrictamente excluidos del control de versiones mediante `.gitignore`.
 2. **Cifrado en Tránsito (SSL/TLS):**
-   * El servidor exige de forma predeterminada conexiones cifradas mediante SSL (`sslmode=require`).
+   * El servidor PostgreSQL exige conexiones cifradas mediante SSL (`sslmode=require`).
+   * Ambos App Services tienen habilitado `https_only = true`, redirigiendo automáticamente el tráfico HTTP a HTTPS.
 3. **Reglas de Firewall:**
    * Se configuró la regla `allow-azure-services` (`0.0.0.0`), que permite conexiones desde cualquier servicio alojado en Azure. Es necesaria porque el App Service (Issue #12) no tiene IP de salida fija. La autenticación por usuario/contraseña y SSL siguen siendo obligatorias.
    * El acceso desde redes externas permanece cerrado por defecto, requiriendo autorización explícita de direcciones IP para conexiones administrativas externas.
@@ -121,4 +122,4 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 > `rejectUnauthorized: false` cifra la conexión pero no valida el certificado del servidor. Para el entorno de desarrollo del proyecto es adecuado, pero en entornos de producción se recomienda validar el certificado oficial de la entidad certificadora de Microsoft.
 
 ---
-Issue #11 · PR #13 · Issue #12
+Issue #11 · PR #13 · Issue #12 · PR #27

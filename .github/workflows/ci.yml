@@ -10,9 +10,9 @@ on:
 permissions:
   contents: read
 
-# Si subes otro commit al mismo PR, cancela la corrida anterior
+# En PR cancela corridas anteriores; en main usa el run_id para no cancelar un deploy esperando aprobación
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -39,10 +39,34 @@ jobs:
 
       - name: Correr pruebas
         run: npm test
+  frontend:
+    name: Frontend - pruebas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Correr pruebas
+        run: npm test
+
   docker:
     name: Docker - Build y Push
     # No compila ni sube imágenes si las pruebas fallan
-    needs: backend
+    needs: [backend, frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Descargar el código
@@ -98,3 +122,19 @@ jobs:
         env:
           WEBHOOK_URL: ${{ secrets.AZURE_WEB_WEBHOOK_URL }}
         run: curl --fail -sS -X POST "$WEBHOOK_URL"
+
+      - name: Verificar salud del Backend (/health)
+        env:
+          API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          sleep 20
+          for i in $(seq 1 12); do
+            if curl --fail -sS --max-time 10 "$API_URL/health"; then
+              echo ""
+              exit 0
+            fi
+            echo "Esperando a que el Backend responda ($i/12)..."
+            sleep 10
+          done
+          echo "El Backend no respondió /health a tiempo"
+          exit 1

@@ -35,5 +35,5 @@ USER node
 # Exponer el puerto de la API
 EXPOSE 3000
 
-# Comando para iniciar la aplicación
-CMD ["node", "src/server.js"]
+# Comando para aplicar el esquema de forma idempotente e iniciar la aplicación
+CMD ["sh", "-c", "node src/db/init.js && exec node src/server.js"]

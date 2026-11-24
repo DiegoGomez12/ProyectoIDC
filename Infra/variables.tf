@@ -60,5 +60,5 @@ variable "jwt_secret" {
 variable "jwt_expires_in" {
   description = "Tiempo de expiración del token JWT"
   type        = string
-  default     = "1h"
+  default     = "10h"
 }
