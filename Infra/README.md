@@ -42,7 +42,7 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
 | **Log Analytics Workspace** | `law-timecheck` (`PerGB2018`, 30 días, `westus2`) | Almacén centralizado de logs HTTP, consola de contenedores y métricas (primeros 5 GB/mes gratuitos). |
 | **Application Insights** | `ai-timecheck` (`Node.JS`, ligado a `law-timecheck`) | Telemetría del backend vía `@azure/monitor-opentelemetry`: *Live Metrics*, *Application Map* (API → PostgreSQL), rendimiento por endpoint y errores. |
 | **Diagnostic Settings** | `diag-timecheck-api` y `diag-timecheck-web` | Reenvío automático de `AppServiceHTTPLogs`, `AppServiceConsoleLogs`, `AppServiceAppLogs`, `AppServicePlatformLogs` y `AllMetrics` a Log Analytics. |
-| **Alertas** | `alert-timecheck-api-5xx` + `ag-timecheck-alerts` | Envía notificación por correo si el backend registra errores HTTP `5xx` en una ventana de 5 minutos. |
+| **Alertas** | `alert-timecheck-api-5xx`, `alert-timecheck-api-health` y `ag-timecheck-alerts` | Envía notificación por correo si el backend registra errores HTTP `5xx` o si falla el sondeo periódico de `/health` (`HealthCheckStatus < 100`), incluso sin tráfico de usuarios. |
 
 ---
 
@@ -136,6 +136,7 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 ## 7. Cómo Consultar Métricas, Logs y Alertas en Azure
 1. **Live Metrics y Application Map:** Portal de Azure → `ai-timecheck` (Application Insights) → **Métricas en tiempo real** (*Live Metrics*) o **Mapa de aplicación** (*Application Map*) para ver peticiones en vivo, tiempos de respuesta y llamadas a PostgreSQL.
 2. **Errores y rendimiento:** `ai-timecheck` → **Errores** (*Failures*) y **Rendimiento** (*Performance*).
+   > Por defecto, `@azure/monitor-opentelemetry` aplica muestreo de ~5 peticiones por segundo, por lo que en ráfagas de tráfico no se guardan todas las peticiones individuales.
 3. **Logs de contenedores y HTTP (KQL):** `law-timecheck` → **Registros** (*Logs*). Ejemplo para ver errores recientes:
    ```kql
    AppServiceHTTPLogs
@@ -143,7 +144,7 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
    | order by TimeGenerated desc
    | take 50
    ```
-4. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar la regla `alert-timecheck-api-5xx`.
+4. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar las reglas `alert-timecheck-api-5xx` y `alert-timecheck-api-health`.
 
 ---
-Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29
+Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30

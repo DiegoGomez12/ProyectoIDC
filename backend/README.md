@@ -34,8 +34,9 @@ backend/
 ├── src/
 │   ├── app.js           # Configura Express (sin listen, para poder probarlo con Supertest)
 │   ├── server.js        # Arranca el servidor
-│   ├── config/env.js    # Carga el .env de la raíz del repo
-│   ├── config/db.js     # Pool de conexiones a PostgreSQL
+│   ├── config/env.js       # Carga el .env de la raíz del repo
+│   ├── config/db.js        # Pool de conexiones a PostgreSQL
+│   ├── config/telemetry.js # Monitoreo con Azure (solo si hay connection string)
 │   ├── db/
 │   │   ├── schema.sql   # Definición de tablas
 │   │   └── init.js      # Aplica schema.sql (npm run db:init)
@@ -109,6 +110,7 @@ CLIENT_URL=http://localhost:5173
 | `PORT` | Puerto de la API |
 | `JWT_SECRET`, `JWT_EXPIRES_IN` | Firma y duración del token  |
 | `CLIENT_URL` | Origen permitido por CORS (frontend) |
+| `APPLICATIONINSIGHTS_CONNECTION_STRING` | Conexión a Application Insights (definida por Terraform en Azure; no se usa en local) |
 
 ## Pruebas
 `npm test` corre todo con Jest + Supertest, sin base de datos (el modelo o el pool se simulan).

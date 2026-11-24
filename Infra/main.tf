@@ -72,7 +72,8 @@ resource "azurerm_linux_web_app" "backend" {
   https_only          = true
 
   site_config {
-    always_on = true
+    always_on         = true
+    health_check_path = "/health"
     application_stack {
       docker_image_name   = "${var.dockerhub_username}/timecheck-api:latest"
       docker_registry_url = "https://index.docker.io"
@@ -250,6 +251,29 @@ resource "azurerm_monitor_metric_alert" "api_http_5xx" {
     aggregation      = "Total"
     operator         = "GreaterThan"
     threshold        = 0
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.alerts.id
+  }
+}
+
+# Alerta ante caída de salud del Backend (incluso sin tráfico de usuarios)
+resource "azurerm_monitor_metric_alert" "api_health_check" {
+  name                = "alert-timecheck-api-health"
+  resource_group_name = azurerm_resource_group.rg.name
+  scopes              = [azurerm_linux_web_app.backend.id]
+  description         = "Alerta cuando el health check /health del backend de TimeCheck falla."
+  severity            = 1
+  frequency           = "PT5M"
+  window_size         = "PT5M"
+
+  criteria {
+    metric_namespace = "Microsoft.Web/sites"
+    metric_name      = "HealthCheckStatus"
+    aggregation      = "Average"
+    operator         = "LessThan"
+    threshold        = 100
   }
 
   action {
