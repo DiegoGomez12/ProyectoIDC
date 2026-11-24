@@ -199,10 +199,11 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
         {pestana === 'login' ? (
           <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
+              <label htmlFor="login-email" style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
                 Correo Electrónico
               </label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -222,7 +223,7 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
 
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
+                <label htmlFor="login-password" style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
                   Contraseña
                 </label>
                 <button
@@ -241,6 +242,7 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
                 </button>
               </div>
               <input
+                id="login-password"
                 type={mostrarPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -282,10 +284,11 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
           /* Formulario de Registro de Nuevo Empleado */
           <form onSubmit={handleRegistroSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
+              <label htmlFor="reg-nombre" style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
                 Nombre Completo
               </label>
               <input
+                id="reg-nombre"
                 type="text"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
@@ -303,10 +306,11 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
+              <label htmlFor="reg-email" style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
                 Correo Electrónico
               </label>
               <input
+                id="reg-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -325,7 +329,7 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
 
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
+                <label htmlFor="reg-password" style={{ fontSize: '0.85rem', fontWeight: '600', color: '#334155' }}>
                   Contraseña (mínimo 8 caracteres)
                 </label>
                 <button
@@ -344,6 +348,7 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
                 </button>
               </div>
               <input
+                id="reg-password"
                 type={mostrarPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -362,10 +367,11 @@ export default function Login({ onLoginSuccess, onDemoAccess }) {
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
+              <label htmlFor="reg-confirm-password" style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.35rem' }}>
                 Confirmar Contraseña
               </label>
               <input
+                id="reg-confirm-password"
                 type={mostrarPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

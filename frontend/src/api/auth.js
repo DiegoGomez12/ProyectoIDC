@@ -15,13 +15,13 @@ export async function login(email, password) {
       body: JSON.stringify({ email, password })
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || data.mensaje || 'Credenciales incorrectas');
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data === null) {
+      throw new Error(data?.error || data?.mensaje || 'Credenciales incorrectas');
     }
     return data;
   } catch (err) {
-    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+    if (err instanceof TypeError) {
       throw new Error('No se pudo conectar con el servidor (API fuera de línea).');
     }
     throw err;
@@ -41,13 +41,13 @@ export async function registrarUsuario(usuarioDatos) {
       body: JSON.stringify(usuarioDatos)
     });
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error || data.mensaje || 'Error al registrar el usuario');
+    const data = await response.json().catch(() => null);
+    if (!response.ok || data === null) {
+      throw new Error(data?.error || data?.mensaje || 'Error al registrar el usuario');
     }
     return data;
   } catch (err) {
-    if (err.name === 'TypeError' && err.message.includes('fetch')) {
+    if (err instanceof TypeError) {
       throw new Error('No se pudo conectar con el servidor (API fuera de línea).');
     }
     throw err;
