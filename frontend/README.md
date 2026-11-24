@@ -9,10 +9,8 @@ Aplicación de interfaz de usuario Single Page Application (SPA) desarrollada co
 Esta base proporciona la arquitectura inicial para que el equipo pueda continuar con la **Fase 4** del proyecto sin cerrar prematuramente los issues funcionales:
 
 * **Issue #2 (Infraestructura / Este PR):** Dockerfile multi-stage (`node:24-alpine` para build y `nginx:alpine` para runtime) con soporte de inyección de `VITE_API_URL`, instalación reproducible vía `npm ci`, y configuración de servidor Nginx para rutas SPA (`nginx.conf`).
-* **Base para Issue #9 (Autenticación / Login):** Vistas y servicios en `src/pages/Login.jsx` y `src/api/auth.js` listos para conectarse al endpoint `/api/auth/login` y `/api/usuarios`. *(El Issue #9 permanece abierto).*
-* **Base para Issue #10 (Dashboard Asistencias):** Vista en `src/pages/Dashboard.jsx` con panel de registro de jornada y tabla de horas.  
-  > ⚠️ **Nota de alcance:** El Dashboard actualmente utiliza **datos de ejemplo simulados** (no llama a la API real de asistencias) y **no cuenta todavía con pruebas unitarias en React Testing Library**. La suite de pruebas y la integración completa con la API corresponden al **Issue #10**, el cual permanece abierto.
-
+* **Base para Issue #9 (Autenticación / Login):** Vistas y servicios en `src/pages/Login.jsx` y `src/api/auth.js` listos para conectarse al endpoint `/api/auth/login` y `/api/usuarios`. *(El Issue #9 permanece abierto).* 
+* **Issue #10 (Dashboard de Asistencias):** `src/pages/Dashboard.jsx` usa la API real (check-in, check-out e historial) y tiene pruebas con React Testing Library.
 ---
 
 ## 📂 Estructura del Frontend
@@ -86,3 +84,22 @@ Acceder en el navegador a `http://localhost:8080`.
 |---|---|---|
 | `VITE_API_URL` | URL base de la API Backend inyectada durante el build | `http://localhost:3000` |
 | `VITE_ENABLE_DEMO` | Permite habilitar el botón de demo en producción si es `true` | `false` (oculto en producción) |
+
+---
+
+## Dashboard (Issue #10)
+- **El turno activo sale de `/mis-registros`:** no se guarda aparte, así sigue correcto al recargar la página.
+- **Los botones se bloquean mientras responde la API** para evitar un doble registro.
+- **Si el historial no carga, no se muestran los botones**, porque no se sabe si hay un turno activo.
+- **Horas de la semana:** suma de lunes a domingo, en hora local; la jornada activa no cuenta hasta el Check-out.
+
+## Pruebas
+`npm test` (Vitest + React Testing Library; la API se simula).
+
+| Archivo | Qué cubre |
+|---|---|
+| `src/pages/Dashboard.test.jsx` | Botones Check-in/Check-out, errores, doble clic y sesión expirada |
+| `src/utils/asistencias.test.js` | Inicio de semana, suma de horas y formato |
+| `src/api/asistencias.test.js` | Token, errores de la API, respuestas que no son JSON y falta de conexión |
+
+Se usa Vitest 3 y jest-dom 6 porque las versiones más nuevas requieren Vite 6 o superior.

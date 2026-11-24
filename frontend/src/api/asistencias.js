@@ -1,50 +1,40 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 /**
- * Obtener cabeceras de autorización con JWT
+ * Hace una petición autenticada a la API y devuelve el JSON.
+ * Si algo falla lanza un Error; `error.status` trae el código HTTP cuando la API respondió.
  */
-function getAuthHeaders() {
+async function peticion(ruta, method = 'GET') {
   const token = localStorage.getItem('timecheck_token');
-  return {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  };
-}
 
-/**
- * Registrar Check-in (Entrada)
- */
-export async function registrarEntrada() {
-  const response = await fetch(`${API_URL}/api/asistencias/check-in`, {
-    method: 'POST',
-    headers: getAuthHeaders()
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Error al registrar entrada');
+  let response;
+  try {
+    response = await fetch(`${API_URL}/api/asistencias${ruta}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    throw new Error('No se pudo conectar con el servidor.');
+  }
+
+  // null = la respuesta no es JSON (por ejemplo, una página HTML de error)
+  const data = await response.json().catch(() => null);
+  if (!response.ok || data === null) {
+    const error = new Error(data?.error || 'Ocurrió un error en el servidor.');
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 
-/**
- * Registrar Check-out (Salida)
- */
-export async function registrarSalida() {
-  const response = await fetch(`${API_URL}/api/asistencias/check-out`, {
-    method: 'POST',
-    headers: getAuthHeaders()
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Error al registrar salida');
-  return data;
-}
+/** Registrar entrada (Check-in) */
+export const registrarEntrada = () => peticion('/check-in', 'POST');
 
-/**
- * Obtener historial de asistencias del usuario activo
- */
-export async function obtenerMisAsistencias() {
-  const response = await fetch(`${API_URL}/api/asistencias/mis-registros`, {
-    headers: getAuthHeaders()
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || 'Error al obtener registros');
-  return data;
-}
+/** Registrar salida (Check-out) */
+export const registrarSalida = () => peticion('/check-out', 'POST');
+
+/** Historial de asistencias del usuario autenticado */
+export const obtenerMisAsistencias = () => peticion('/mis-registros');

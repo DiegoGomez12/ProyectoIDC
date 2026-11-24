@@ -39,10 +39,34 @@ jobs:
 
       - name: Correr pruebas
         run: npm test
+  frontend:
+    name: Frontend - pruebas
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Instalar Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Correr pruebas
+        run: npm test
+
   docker:
     name: Docker - Build y Push
     # No compila ni sube imágenes si las pruebas fallan
-    needs: backend
+    needs: [backend, frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Descargar el código
