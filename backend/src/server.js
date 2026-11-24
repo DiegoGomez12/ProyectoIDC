@@ -1,4 +1,5 @@
 require('./config/env');
+require('./config/telemetry');
 const app = require('./app');
 
 const PORT = process.env.PORT || 3000;

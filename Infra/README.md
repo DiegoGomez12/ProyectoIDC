@@ -11,6 +11,7 @@ Este Terraform solo se usa para modificar o recrear los recursos de la nube. El 
 Implementación de Infraestructura como Código (IaC) mediante **Terraform** para aprovisionar de forma automatizada y reproducible la arquitectura en **Microsoft Azure**:
 - **Base de datos relacional:** Azure Database for PostgreSQL Flexible Server (Issue #11).
 - **Aplicaciones en contenedores:** Azure App Service Plan (Linux) con dos Web Apps conectadas a Docker Hub (`timecheck-api` y `timecheck-web`) y despliegue continuo vía Webhook (Issue #12).
+- **Observabilidad y monitoreo:** Log Analytics Workspace, Application Insights, Diagnostic Settings y alertas por correo ante errores HTTP 5xx (Issue #29 / Story #18).
 
 ---
 
@@ -34,6 +35,14 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
 | **Backend (`timecheck-api-equipo-idc`)** | `diegogomez3/timecheck-api:latest` (Puerto `3000`) | Expone la API REST sobre HTTPS con variables de entorno inyectadas desde Terraform (DB, SSL, JWT y CORS hacia el frontend). |
 | **Frontend (`timecheck-web-equipo-idc`)** | `diegogomez3/timecheck-web:latest` (Puerto `80`) | Sirve la SPA de React compilada con Nginx. |
 | **Despliegue Continuo** | `DOCKER_ENABLE_CI = "true"` + Webhooks | Permite que GitHub Actions dispare la descarga y reinicio automático de contenedores tras aprobar el despliegue a `production`. |
+
+### Observabilidad y Monitoreo (Azure Monitor)
+| Recurso | Configuración | Propósito |
+| :--- | :--- | :--- |
+| **Log Analytics Workspace** | `law-timecheck` (`PerGB2018`, 30 días, `westus2`) | Almacén centralizado de logs HTTP, consola de contenedores y métricas (primeros 5 GB/mes gratuitos). |
+| **Application Insights** | `ai-timecheck` (`Node.JS`, ligado a `law-timecheck`) | Telemetría del backend vía `@azure/monitor-opentelemetry`: *Live Metrics*, *Application Map* (API → PostgreSQL), rendimiento por endpoint y errores. |
+| **Diagnostic Settings** | `diag-timecheck-api` y `diag-timecheck-web` | Reenvío automático de `AppServiceHTTPLogs`, `AppServiceConsoleLogs`, `AppServiceAppLogs`, `AppServicePlatformLogs` y `AllMetrics` a Log Analytics. |
+| **Alertas** | `alert-timecheck-api-5xx` + `ag-timecheck-alerts` | Envía notificación por correo si el backend registra errores HTTP `5xx` en una ventana de 5 minutos. |
 
 ---
 
@@ -90,6 +99,7 @@ Para replicar o desplegar esta infraestructura en un entorno nuevo:
    api_app_name        = "timecheck-api-equipo-idc"
    web_app_name        = "timecheck-web-equipo-idc"
    jwt_secret          = "<SECRET_JWT_SEGURO>"
+   alert_email         = "<CORREO_ALERTAS>"
    ```
 4. **Planificación (Dry-run):**
    ```bash
@@ -122,4 +132,18 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 > `rejectUnauthorized: false` cifra la conexión pero no valida el certificado del servidor. Para el entorno de desarrollo del proyecto es adecuado, pero en entornos de producción se recomienda validar el certificado oficial de la entidad certificadora de Microsoft.
 
 ---
-Issue #11 · PR #13 · Issue #12 · PR #27
+
+## 7. Cómo Consultar Métricas, Logs y Alertas en Azure
+1. **Live Metrics y Application Map:** Portal de Azure → `ai-timecheck` (Application Insights) → **Métricas en tiempo real** (*Live Metrics*) o **Mapa de aplicación** (*Application Map*) para ver peticiones en vivo, tiempos de respuesta y llamadas a PostgreSQL.
+2. **Errores y rendimiento:** `ai-timecheck` → **Errores** (*Failures*) y **Rendimiento** (*Performance*).
+3. **Logs de contenedores y HTTP (KQL):** `law-timecheck` → **Registros** (*Logs*). Ejemplo para ver errores recientes:
+   ```kql
+   AppServiceHTTPLogs
+   | where ScStatus >= 400
+   | order by TimeGenerated desc
+   | take 50
+   ```
+4. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar la regla `alert-timecheck-api-5xx`.
+
+---
+Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29

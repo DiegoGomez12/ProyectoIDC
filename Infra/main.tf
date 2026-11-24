@@ -79,20 +79,33 @@ resource "azurerm_linux_web_app" "backend" {
     }
   }
 
+  logs {
+    detailed_error_messages = true
+    failed_request_tracing  = true
+
+    http_logs {
+      file_system {
+        retention_in_days = 7
+        retention_in_mb   = 35
+      }
+    }
+  }
+
   app_settings = {
-    DOCKER_ENABLE_CI  = "true"
-    WEBSITES_PORT     = "3000"
-    NODE_ENV          = "production"
-    PORT              = "3000"
-    DB_HOST           = azurerm_postgresql_flexible_server.postgres.fqdn
-    DB_PORT           = "5432"
-    POSTGRES_DB       = azurerm_postgresql_flexible_server_database.db.name
-    POSTGRES_USER     = var.admin_username
-    POSTGRES_PASSWORD = var.admin_password
-    DB_SSL            = "true"
-    JWT_SECRET        = var.jwt_secret
-    JWT_EXPIRES_IN    = var.jwt_expires_in
-    CLIENT_URL        = "https://${var.web_app_name}.azurewebsites.net"
+    DOCKER_ENABLE_CI                      = "true"
+    WEBSITES_PORT                         = "3000"
+    NODE_ENV                              = "production"
+    PORT                                  = "3000"
+    DB_HOST                               = azurerm_postgresql_flexible_server.postgres.fqdn
+    DB_PORT                               = "5432"
+    POSTGRES_DB                           = azurerm_postgresql_flexible_server_database.db.name
+    POSTGRES_USER                         = var.admin_username
+    POSTGRES_PASSWORD                     = var.admin_password
+    DB_SSL                                = "true"
+    JWT_SECRET                            = var.jwt_secret
+    JWT_EXPIRES_IN                        = var.jwt_expires_in
+    CLIENT_URL                            = "https://${var.web_app_name}.azurewebsites.net"
+    APPLICATIONINSIGHTS_CONNECTION_STRING = azurerm_application_insights.ai.connection_string
   }
 }
 
@@ -112,8 +125,134 @@ resource "azurerm_linux_web_app" "frontend" {
     }
   }
 
+  logs {
+    detailed_error_messages = true
+    failed_request_tracing  = true
+
+    http_logs {
+      file_system {
+        retention_in_days = 7
+        retention_in_mb   = 35
+      }
+    }
+  }
+
   app_settings = {
     DOCKER_ENABLE_CI = "true"
     WEBSITES_PORT    = "80"
+  }
+}
+
+# ==========================================
+# Observabilidad y Monitoreo (Azure Monitor)
+# ==========================================
+
+# Log Analytics Workspace (5 GB/mes gratuitos, retención de 30 días)
+resource "azurerm_log_analytics_workspace" "law" {
+  name                = "law-timecheck"
+  location            = "westus2"
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "PerGB2018"
+  retention_in_days   = 30
+}
+
+# Application Insights para telemetría de API, Live Metrics y Application Map
+resource "azurerm_application_insights" "ai" {
+  name                = "ai-timecheck"
+  location            = "westus2"
+  resource_group_name = azurerm_resource_group.rg.name
+  workspace_id        = azurerm_log_analytics_workspace.law.id
+  application_type    = "Node.JS"
+}
+
+# Diagnostic Settings: envío de logs y métricas del Backend a Log Analytics
+resource "azurerm_monitor_diagnostic_setting" "backend_logs" {
+  name                       = "diag-timecheck-api"
+  target_resource_id         = azurerm_linux_web_app.backend.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
+
+  enabled_log {
+    category = "AppServiceHTTPLogs"
+  }
+
+  enabled_log {
+    category = "AppServiceConsoleLogs"
+  }
+
+  enabled_log {
+    category = "AppServiceAppLogs"
+  }
+
+  enabled_log {
+    category = "AppServicePlatformLogs"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
+
+# Diagnostic Settings: envío de logs y métricas del Frontend a Log Analytics
+resource "azurerm_monitor_diagnostic_setting" "frontend_logs" {
+  name                       = "diag-timecheck-web"
+  target_resource_id         = azurerm_linux_web_app.frontend.id
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.law.id
+
+  enabled_log {
+    category = "AppServiceHTTPLogs"
+  }
+
+  enabled_log {
+    category = "AppServiceConsoleLogs"
+  }
+
+  enabled_log {
+    category = "AppServiceAppLogs"
+  }
+
+  enabled_log {
+    category = "AppServicePlatformLogs"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
+
+# Grupo de acción para notificaciones de alertas por correo
+resource "azurerm_monitor_action_group" "alerts" {
+  name                = "ag-timecheck-alerts"
+  resource_group_name = azurerm_resource_group.rg.name
+  short_name          = "timecheck"
+
+  email_receiver {
+    name                    = "admin-email"
+    email_address           = var.alert_email
+    use_common_alert_schema = true
+  }
+}
+
+# Alerta ante errores HTTP 5xx en el Backend
+resource "azurerm_monitor_metric_alert" "api_http_5xx" {
+  name                = "alert-timecheck-api-5xx"
+  resource_group_name = azurerm_resource_group.rg.name
+  scopes              = [azurerm_linux_web_app.backend.id]
+  description         = "Alerta cuando el backend de TimeCheck registra errores HTTP 5xx."
+  severity            = 2
+  frequency           = "PT5M"
+  window_size         = "PT5M"
+
+  criteria {
+    metric_namespace = "Microsoft.Web/sites"
+    metric_name      = "Http5xx"
+    aggregation      = "Total"
+    operator         = "GreaterThan"
+    threshold        = 0
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.alerts.id
   }
 }
