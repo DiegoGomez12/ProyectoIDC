@@ -40,6 +40,7 @@ backend/
 │   ├── routes/          # URL → middleware → controlador
 │   └── utils/           # Funciones puras (cálculo de horas trabajadas)
 └── tests/               # Pruebas con Jest + Supertest (el modelo se simula)
+│   └── utils/           # Funciones puras (cálculo de horas y usuario en la telemetría)
 ```
 
 ## Endpoints
