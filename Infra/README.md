@@ -165,5 +165,20 @@ DB_SSL=true
    ```
 5. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar las reglas `alert-timecheck-api-5xx` y `alert-timecheck-api-health`.
 
+6. **Usuarios activos:** `ai-timecheck` → **Registros** (*Logs*). Usuarios distintos con al menos una petición en los últimos 15 minutos:
+   ```kql
+   requests
+   | where timestamp > ago(15m) and isnotempty(user_Id)
+   | summarize usuarios_activos = dcount(user_Id)
+   ```
+   Evolución en 24 horas (se puede fijar al panel):
+   ```kql
+   requests
+   | where timestamp > ago(24h) and isnotempty(user_Id)
+   | summarize usuarios_activos = dcount(user_Id) by bin(timestamp, 15m)
+   | render timechart
+   ```
+   > `user_Id` es el UUID del usuario. Las sesiones siguen en 0 porque requieren el SDK del navegador.
+
 ---
 Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30 · Issue #31 · PR #32
