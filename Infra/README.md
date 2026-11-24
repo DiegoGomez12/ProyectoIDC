@@ -1,4 +1,4 @@
-# Infraestructura: Aprovisionamiento de PostgreSQL en Azure
+# Infraestructura: Aprovisionamiento en Azure (PostgreSQL + App Service)
 
 ## ¿Quién usa esto?
 La infraestructura de Azure ya está aprovisionada y la administra Diego. Para desarrollar no hace falta correr Terraform ni conectarse a Azure: se usa la base local con docker compose (ver README principal, "Entorno de desarrollo local"). 
@@ -8,12 +8,15 @@ Este Terraform solo se usa para modificar o recrear los recursos de la nube. El 
 ---
 
 ## 1. Resumen
-Implementación de Infraestructura como Código (IaC) mediante **Terraform** para aprovisionar de forma automatizada y reproducible la base de datos relacional del proyecto en **Microsoft Azure** utilizando el servicio administrado **Azure Database for PostgreSQL Flexible Server**.
+Implementación de Infraestructura como Código (IaC) mediante **Terraform** para aprovisionar de forma automatizada y reproducible la arquitectura en **Microsoft Azure**:
+- **Base de datos relacional:** Azure Database for PostgreSQL Flexible Server (Issue #11).
+- **Aplicaciones en contenedores:** Azure App Service Plan (Linux) con dos Web Apps conectadas a Docker Hub (`timecheck-api` y `timecheck-web`) y despliegue continuo vía Webhook (Issue #12).
 
 ---
 
 ## 2. Decisiones Técnicas y Arquitectura
 
+### Base de Datos (PostgreSQL)
 | Parámetro | Configuración | Justificación Técnica |
 | :--- | :--- | :--- |
 | **Servicio** | Azure Database for PostgreSQL (Flexible Server) | Servicio administrado con soporte de respaldos automáticos, alta disponibilidad y mantenimiento sin intervención manual. |
@@ -23,6 +26,15 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
 | **Región** | `centralus` (Centro de EE. UU.) | Selección estratégica basada en disponibilidad de cuotas de cómputo para el nivel *Burstable* y sin restricciones de aprovisionamiento en la suscripción. |
 | **Base de Datos Inicial** | `timecheck` | Base de datos relacional dedicada para las tablas del sistema. |
 
+### Contenedores (Azure App Service)
+| Parámetro | Configuración | Justificación Técnica |
+| :--- | :--- | :--- |
+| **App Service Plan** | Linux `B1` (`asp-timecheck`) | Nivel básico requerido por Azure para ejecutar imágenes Docker personalizadas con `always_on = true`. |
+| **Región** | `westus2` (Oeste de EE. UU. 2) | Región con cuota activa de instancias B1 en la suscripción. |
+| **Backend (`timecheck-api-equipo-idc`)** | `diegogomez3/timecheck-api:latest` (Puerto `3000`) | Expone la API REST sobre HTTPS con variables de entorno inyectadas desde Terraform (DB, SSL, JWT y CORS hacia el frontend). |
+| **Frontend (`timecheck-web-equipo-idc`)** | `diegogomez3/timecheck-web:latest` (Puerto `80`) | Sirve la SPA de React compilada con Nginx. |
+| **Despliegue Continuo** | `DOCKER_ENABLE_CI = "true"` + Webhooks | Permite que GitHub Actions dispare la descarga y reinicio automático de contenedores tras aprobar el despliegue a `production`. |
+
 ---
 
 ## 3. Seguridad y Redes
@@ -31,7 +43,8 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
    * Las credenciales sensibles están parametrizadas en variables de Terraform con el modificador `sensitive = true`, evitando su exposición en texto plano en logs de consola.
    * Los archivos locales con valores reales (`*.tfvars`), archivos de entorno (`.env`) y los archivos de estado (`*.tfstate`) se encuentran estrictamente excluidos del control de versiones mediante `.gitignore`.
 2. **Cifrado en Tránsito (SSL/TLS):**
-   * El servidor exige de forma predeterminada conexiones cifradas mediante SSL (`sslmode=require`).
+   * El servidor PostgreSQL exige conexiones cifradas mediante SSL (`sslmode=require`).
+   * Ambos App Services tienen habilitado `https_only = true`, redirigiendo automáticamente el tráfico HTTP a HTTPS.
 3. **Reglas de Firewall:**
    * Se configuró la regla `allow-azure-services` (`0.0.0.0`), que permite conexiones desde cualquier servicio alojado en Azure. Es necesaria porque el App Service (Issue #12) no tiene IP de salida fija. La autenticación por usuario/contraseña y SSL siguen siendo obligatorias.
    * El acceso desde redes externas permanece cerrado por defecto, requiriendo autorización explícita de direcciones IP para conexiones administrativas externas.
@@ -69,10 +82,14 @@ Para replicar o desplegar esta infraestructura en un entorno nuevo:
    ```hcl
    resource_group_name = "rg-timecheck"
    location            = "centralus"
-   server_name         = "timecheck-db-equipo"
+   server_name         = "timecheck-db-equipo-idc"
    db_name             = "timecheck"
    admin_username      = "timecheck_admin"
    admin_password      = "<PASSWORD_SEGURO>"
+   dockerhub_username  = "<USUARIO_DOCKERHUB>"
+   api_app_name        = "timecheck-api-equipo-idc"
+   web_app_name        = "timecheck-web-equipo-idc"
+   jwt_secret          = "<SECRET_JWT_SEGURO>"
    ```
 4. **Planificación (Dry-run):**
    ```bash
@@ -105,4 +122,4 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 > `rejectUnauthorized: false` cifra la conexión pero no valida el certificado del servidor. Para el entorno de desarrollo del proyecto es adecuado, pero en entornos de producción se recomienda validar el certificado oficial de la entidad certificadora de Microsoft.
 
 ---
-Issue #11 · PR #13
+Issue #11 · PR #13 · Issue #12 · PR #27

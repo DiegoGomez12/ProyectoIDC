@@ -86,3 +86,22 @@ Acceder en el navegador a `http://localhost:8080`.
 |---|---|---|
 | `VITE_API_URL` | URL base de la API Backend inyectada durante el build | `http://localhost:3000` |
 | `VITE_ENABLE_DEMO` | Permite habilitar el botón de demo en producción si es `true` | `false` (oculto en producción) |
+
+---
+
+## Dashboard (Issue #10)
+- **El turno activo sale de `/mis-registros`:** no se guarda aparte, así sigue correcto al recargar la página.
+- **Los botones se bloquean mientras responde la API** para evitar un doble registro.
+- **Si el historial no carga, no se muestran los botones**, porque no se sabe si hay un turno activo.
+- **Horas de la semana:** suma de lunes a domingo, en hora local; la jornada activa no cuenta hasta el Check-out.
+
+## Pruebas
+`npm test` (Vitest + React Testing Library; la API se simula).
+
+| Archivo | Qué cubre |
+|---|---|
+| `src/pages/Dashboard.test.jsx` | Botones Check-in/Check-out, errores, doble clic y sesión expirada |
+| `src/utils/asistencias.test.js` | Inicio de semana, suma de horas y formato |
+| `src/api/asistencias.test.js` | Token, errores de la API, respuestas que no son JSON y falta de conexión |
+
+Se usa Vitest 3 y jest-dom 6 porque las versiones más nuevas requieren Vite 6 o superior.
