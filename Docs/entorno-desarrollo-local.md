@@ -11,7 +11,7 @@ Como parte del **Issue #3**, se implementó la orquestación del entorno de desa
 | :--- | :--- | :--- |
 | **Imagen Base** | `postgres:15-alpine` | Imagen oficial basada en Alpine Linux, optimizada para reducir el peso (~90 MB) y minimizar la superficie de exposición ante vulnerabilidades. |
 | **Persistencia** | Volumen con nombre (`postgres_data`) | Almacenamiento administrado por el motor de Docker que garantiza la persistencia de tablas y registros al reiniciar o apagar el contenedor (`docker compose down`). |
-| **Aislamiento de Red** | Red interna dedicada (`timecheck-network`, driver `bridge`) | Aísla la comunicación del contenedor en una red privada virtual para futura vinculación con los contenedores de Backend y Frontend. |
+| **Aislamiento de Red** | Red interna dedicada (`timecheck-network`, driver `bridge`) | Aísla la comunicación del contenedor en una red privada virtual; en desarrollo local, `docker-compose.yml` orquesta únicamente PostgreSQL mientras Backend y Frontend corren con `npm run dev` (o con sus Dockerfiles independientes). |
 | **Mecanismo de Salud** | Healthcheck nativo (`pg_isready`) | Evalúa cada 5 segundos si el motor de base de datos está listo para aceptar conexiones antes de permitir que otros servicios intenten consultar datos. |
 
 ---
@@ -27,7 +27,7 @@ Siguiendo las directrices de seguridad y la metodología **12-Factor App**:
 Crear un archivo `.env` en la raíz del proyecto con la siguiente estructura:
 
 ```env
-POSTGRES_DB=timecheck_db
+POSTGRES_DB=timecheck
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=tu_password_local
 DB_PORT=5432
