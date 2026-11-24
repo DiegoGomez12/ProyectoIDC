@@ -12,6 +12,7 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
 - **Base de datos relacional:** Azure Database for PostgreSQL Flexible Server (Issue #11).
 - **Aplicaciones en contenedores:** Azure App Service Plan (Linux) con dos Web Apps conectadas a Docker Hub (`timecheck-api` y `timecheck-web`) y despliegue continuo vía Webhook (Issue #12).
 - **Observabilidad y monitoreo:** Log Analytics Workspace, Application Insights, Diagnostic Settings y alertas por correo ante errores HTTP 5xx (Issue #29 / Story #18).
+- **Ambiente Dev aislado (`dev.tf`):** Resource Group (`rg-timecheck-dev`), servidor PostgreSQL, App Service Plan B1, Web Apps (`timecheck-api-dev-equipo-idc`, `timecheck-web-dev-equipo-idc`) y Application Insights (`ai-timecheck-dev`) independientes de Producción (Issue #31 / Story #18).
 
 ---
 
@@ -64,9 +65,10 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
 
 ```text
 Infra/
-├── main.tf             # Definición de proveedor, Resource Group, servidor, base de datos y firewall
+├── main.tf             # Definición de Producción (RG, PostgreSQL, App Services y Azure Monitor)
+├── dev.tf              # Definición del ambiente Dev aislado (RG, PostgreSQL, App Services y APM)
 ├── variables.tf        # Declaración de variables de entrada, tipos y valores por defecto
-├── outputs.tf          # Definición de salidas de conexión (Host FQDN, BD, usuario administrador)
+├── outputs.tf          # Definición de salidas de conexión para Prod y Dev
 ├── .terraform.lock.hcl # Registro de versiones y hashes de proveedores para reproducibilidad
 └── README.md           # Esta documentación técnica
 ```
@@ -100,6 +102,8 @@ Para replicar o desplegar esta infraestructura en un entorno nuevo:
    web_app_name        = "timecheck-web-equipo-idc"
    jwt_secret          = "<SECRET_JWT_SEGURO>"
    alert_email         = "<CORREO_ALERTAS>"
+   dev_admin_password  = "<PASSWORD_DEV_SEGURO>"
+   dev_jwt_secret      = "<SECRET_JWT_DEV_SEGURO>"
    ```
 4. **Planificación (Dry-run):**
    ```bash
@@ -147,4 +151,4 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 4. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar las reglas `alert-timecheck-api-5xx` y `alert-timecheck-api-health`.
 
 ---
-Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30
+Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30 · Issue #31 · PR #32

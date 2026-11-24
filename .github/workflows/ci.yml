@@ -37,8 +37,8 @@ jobs:
       - name: Instalar dependencias
         run: npm ci
 
-      - name: Correr pruebas
-        run: npm test
+      - name: Correr pruebas con cobertura
+        run: npx jest --coverage --collectCoverageFrom='src/**/*.js'
   frontend:
     name: Frontend - pruebas
     runs-on: ubuntu-latest
@@ -83,7 +83,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # En PR solo valida el build; en main sube con latest y el SHA
+      # En PR solo valida el build; en main sube con dev, latest y el SHA
       - name: Construir y subir Backend (timecheck-api)
         uses: docker/build-push-action@v7
         with:
@@ -91,10 +91,23 @@ jobs:
           file: ./backend/Dockerfile
           push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-api:dev
             ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-api:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-api:${{ github.sha }}
 
-      - name: Construir y subir Frontend (timecheck-web)
+      - name: Construir y subir Frontend Dev (timecheck-web:dev)
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL_DEV }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-web:dev
+            ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-web:dev-${{ github.sha }}
+
+      - name: Construir y subir Frontend Prod (timecheck-web:latest)
         uses: docker/build-push-action@v7
         with:
           context: ./frontend
@@ -106,24 +119,67 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-web:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/timecheck-web:${{ github.sha }}
 
-  deploy:
-    name: Deploy - Azure App Service
+  deploy-dev:
+    name: Deploy Dev - Azure App Service
     needs: docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: development
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar Webhook de Backend Dev (timecheck-api-dev)
+        env:
+          WEBHOOK_URL: ${{ secrets.AZURE_API_DEV_WEBHOOK_URL }}
+        run: curl --fail -sS -X POST "$WEBHOOK_URL"
+
+      - name: Disparar Webhook de Frontend Dev (timecheck-web-dev)
+        env:
+          WEBHOOK_URL: ${{ secrets.AZURE_WEB_DEV_WEBHOOK_URL }}
+        run: curl --fail -sS -X POST "$WEBHOOK_URL"
+
+      - name: Verificar salud del Backend Dev (/health)
+        env:
+          API_URL: ${{ vars.VITE_API_URL_DEV }}
+        run: |
+          sleep 20
+          for i in $(seq 1 12); do
+            if curl --fail -sS --max-time 10 "$API_URL/health"; then
+              echo ""
+              exit 0
+            fi
+            echo "Esperando a que el Backend Dev responda ($i/12)..."
+            sleep 10
+          done
+          echo "El Backend Dev no respondió /health a tiempo"
+          exit 1
+
+      - name: Verificar conexión a la BD en Dev
+        env:
+          API_URL: ${{ vars.VITE_API_URL_DEV }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/api/auth/login" \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"smoke@test.invalid","password":"no-existe"}')
+          echo "Respuesta: $code"
+          test "$code" = "401"
+
+  deploy-prod:
+    name: Deploy Prod - Azure App Service
+    needs: deploy-dev
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment: production
     runs-on: ubuntu-latest
     steps:
-      - name: Disparar Webhook de Backend (timecheck-api)
+      - name: Disparar Webhook de Backend Prod (timecheck-api)
         env:
           WEBHOOK_URL: ${{ secrets.AZURE_API_WEBHOOK_URL }}
         run: curl --fail -sS -X POST "$WEBHOOK_URL"
 
-      - name: Disparar Webhook de Frontend (timecheck-web)
+      - name: Disparar Webhook de Frontend Prod (timecheck-web)
         env:
           WEBHOOK_URL: ${{ secrets.AZURE_WEB_WEBHOOK_URL }}
         run: curl --fail -sS -X POST "$WEBHOOK_URL"
 
-      - name: Verificar salud del Backend (/health)
+      - name: Verificar salud del Backend Prod (/health)
         env:
           API_URL: ${{ vars.VITE_API_URL }}
         run: |
@@ -133,8 +189,8 @@ jobs:
               echo ""
               exit 0
             fi
-            echo "Esperando a que el Backend responda ($i/12)..."
+            echo "Esperando a que el Backend Prod responda ($i/12)..."
             sleep 10
           done
-          echo "El Backend no respondió /health a tiempo"
+          echo "El Backend Prod no respondió /health a tiempo"
           exit 1
