@@ -1,7 +1,7 @@
 # Infraestructura: Aprovisionamiento en Azure (PostgreSQL + App Service)
 
 ## ¿Quién usa esto?
-La infraestructura de Azure ya está aprovisionada y la administra Diego. Para desarrollar no hace falta correr Terraform ni conectarse a Azure: se usa la base local con docker compose (ver README principal, "Entorno de desarrollo local"). 
+La infraestructura de Azure ya está aprovisionada y la administra Diego. Para desarrollar no hace falta correr Terraform ni conectarse a Azure: se usa la base local con docker compose (ver [Docs/entorno-desarrollo-local.md](../Docs/entorno-desarrollo-local.md)). 
 
 Este Terraform solo se usa para modificar o recrear los recursos de la nube. El archivo `terraform.tfstate` vive en la máquina de quien hizo el apply.
 
@@ -45,6 +45,16 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
 | **Diagnostic Settings** | `diag-timecheck-api` y `diag-timecheck-web` | Reenvío automático de `AppServiceHTTPLogs`, `AppServiceConsoleLogs`, `AppServiceAppLogs`, `AppServicePlatformLogs` y `AllMetrics` a Log Analytics. |
 | **Alertas** | `alert-timecheck-api-5xx`, `alert-timecheck-api-health` y `ag-timecheck-alerts` | Envía notificación por correo si el backend registra errores HTTP `5xx` o si falla el sondeo periódico de `/health` (`HealthCheckStatus < 100`), incluso sin tráfico de usuarios. |
 
+### Ambiente Dev Aislado (`dev.tf` — `rg-timecheck-dev`)
+| Recurso | Configuración | Propósito |
+| :--- | :--- | :--- |
+| **Resource Group** | `rg-timecheck-dev` (`centralus`) | Aísla todos los recursos de desarrollo respecto a Producción (`rg-timecheck`). |
+| **PostgreSQL Flexible Server** | `timecheck-db-dev-equipo-idc` (`B_Standard_B1ms`, PG 15, `centralus`) | Servidor independiente con credenciales propias (`timecheck_dev_admin`) y base `timecheck_dev`. |
+| **App Service Plan** | Linux `B1` (`asp-timecheck-dev`, `westus3`) | Plan dedicado para aislar CPU/RAM de Dev respecto a Producción. |
+| **Backend Dev** | `timecheck-api-dev-equipo-idc` (`diegogomez3/timecheck-api:dev`, `westus3`) | URL: `https://timecheck-api-dev-equipo-idc.azurewebsites.net`, con `health_check_path = "/health"` y `JWT_SECRET` propio. |
+| **Frontend Dev** | `timecheck-web-dev-equipo-idc` (`diegogomez3/timecheck-web:dev`, `westus3`) | URL: `https://timecheck-web-dev-equipo-idc.azurewebsites.net`, compilado con `VITE_API_URL_DEV`. |
+| **Observabilidad Dev** | `ai-timecheck-dev` + `diag-timecheck-api-dev` / `diag-timecheck-web-dev` | Application Insights propio conectado a `law-timecheck`, separando trazas de Dev y Prod. |
+
 ---
 
 ## 3. Seguridad y Redes
@@ -53,8 +63,8 @@ Implementación de Infraestructura como Código (IaC) mediante **Terraform** par
    * Las credenciales sensibles están parametrizadas en variables de Terraform con el modificador `sensitive = true`, evitando su exposición en texto plano en logs de consola.
    * Los archivos locales con valores reales (`*.tfvars`), archivos de entorno (`.env`) y los archivos de estado (`*.tfstate`) se encuentran estrictamente excluidos del control de versiones mediante `.gitignore`.
 2. **Cifrado en Tránsito (SSL/TLS):**
-   * El servidor PostgreSQL exige conexiones cifradas mediante SSL (`sslmode=require`).
-   * Ambos App Services tienen habilitado `https_only = true`, redirigiendo automáticamente el tráfico HTTP a HTTPS.
+   * Los servidores PostgreSQL (Prod y Dev) exigen conexiones cifradas mediante SSL (`sslmode=require`).
+   * Los cuatro App Services (Prod y Dev) tienen habilitado `https_only = true`, redirigiendo automáticamente el tráfico HTTP a HTTPS.
 3. **Reglas de Firewall:**
    * Se configuró la regla `allow-azure-services` (`0.0.0.0`), que permite conexiones desde cualquier servicio alojado en Azure. Es necesaria porque el App Service (Issue #12) no tiene IP de salida fija. La autenticación por usuario/contraseña y SSL siguen siendo obligatorias.
    * El acceso desde redes externas permanece cerrado por defecto, requiriendo autorización explícita de direcciones IP para conexiones administrativas externas.
@@ -130,6 +140,7 @@ DB_PORT=5432
 POSTGRES_DB=timecheck
 POSTGRES_USER=timecheck_admin
 POSTGRES_PASSWORD=<PASSWORD_ADMIN>
+DB_SSL=true
 ```
 
 > [!NOTE]
@@ -138,17 +149,21 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 ---
 
 ## 7. Cómo Consultar Métricas, Logs y Alertas en Azure
-1. **Live Metrics y Application Map:** Portal de Azure → `ai-timecheck` (Application Insights) → **Métricas en tiempo real** (*Live Metrics*) o **Mapa de aplicación** (*Application Map*) para ver peticiones en vivo, tiempos de respuesta y llamadas a PostgreSQL.
-2. **Errores y rendimiento:** `ai-timecheck` → **Errores** (*Failures*) y **Rendimiento** (*Performance*).
+1. **APM (Trazas, Live Metrics y Mapa):** Portal de Azure → `ai-timecheck` (Prod) o `ai-timecheck-dev` (Dev) → **Investigar**:
+   * **Métricas en directo** (*Live Metrics*) para peticiones al segundo.
+   * **Asignación de aplicaciones** (*Application Map*) para ver llamadas `API → PostgreSQL`.
+   * **Buscar** (*Transaction search*) para ver trazas extremo a extremo con spans de Express y SQL.
+2. **Errores y rendimiento:** `ai-timecheck` → **Investigar → Errores** (*Failures*) y **Rendimiento** (*Performance*).
    > Por defecto, `@azure/monitor-opentelemetry` aplica muestreo de ~5 peticiones por segundo, por lo que en ráfagas de tráfico no se guardan todas las peticiones individuales.
-3. **Logs de contenedores y HTTP (KQL):** `law-timecheck` → **Registros** (*Logs*). Ejemplo para ver errores recientes:
+3. **Métricas de CPU y Memoria:** `asp-timecheck` (Prod) o `asp-timecheck-dev` (Dev) → **Supervisión → Métricas** (`CPU Percentage` y `Memory Percentage`).
+4. **Logs de contenedores y HTTP (KQL):** `law-timecheck` → **Registros** (*Logs*). Ejemplo para ver errores recientes:
    ```kql
    AppServiceHTTPLogs
    | where ScStatus >= 400
    | order by TimeGenerated desc
    | take 50
    ```
-4. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar las reglas `alert-timecheck-api-5xx` y `alert-timecheck-api-health`.
+5. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar las reglas `alert-timecheck-api-5xx` y `alert-timecheck-api-health`.
 
 ---
 Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30 · Issue #31 · PR #32

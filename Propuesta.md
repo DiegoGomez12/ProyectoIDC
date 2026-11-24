@@ -138,3 +138,18 @@ Se implementa **GitHub Flow** para soportar el ciclo de entrega continua:
 ### Fase 5: Despliegue en Azure (CD)
 * **Issue 11:** Provisionar la instancia de Azure Database for PostgreSQL.
 * **Issue 12:** Configurar Azure App Services y Webhooks de Docker Hub para despliegue continuo.
+
+---
+
+## 9. Anexo: Actualización de Implementación Final
+Respecto a la propuesta inicial, durante la implementación final se añadieron las siguientes mejoras para cumplir todos los criterios de CI/CD y observabilidad:
+* **Issue #29 (Observabilidad en Azure):** Log Analytics Workspace (`law-timecheck`), Application Insights (`ai-timecheck` y `ai-timecheck-dev`), Diagnostic Settings, alertas por correo (`Http5xx` y `HealthCheckStatus`) e instrumentación OpenTelemetry (`@azure/monitor-opentelemetry` + `ExpressInstrumentation`) en el Backend.
+* **Issue #31 (Ambiente Dev aislado y Cobertura en CI):** Aprovisionamiento en `Infra/dev.tf` del ambiente Dev completamente aislado (`rg-timecheck-dev`, PostgreSQL, App Service Plan B1 en `westus3` y Web Apps de Dev), reporte de cobertura en Backend (`npx jest --coverage --collectCoverageFrom='src/**/*.js'`), y pipeline encadenado en GitHub Actions: pruebas → Docker Hub (`:dev` y `:latest`) → despliegue automático a **`development`** (con smoke test de BD) → aprobación manual en **`production`** → despliegue a Producción. *(Los webhooks de Azure App Service se invocan desde GitHub Actions tras la aprobación, no directamente desde Docker Hub, para respetar la puerta manual).*
+
+### Diagrama de Arquitectura de Infraestructura Actualizado (Azure)
+
+![Diagrama de Arquitectura de Infraestructura en Azure](./Docs/diagrama-arquitectura-azure.png)
+
+### Diagrama de Deployment Actualizado (Pipeline CI/CD)
+
+![Diagrama de Deployment CI/CD](./Docs/diagrama-deployment-cicd.png)
