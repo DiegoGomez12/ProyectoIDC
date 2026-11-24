@@ -68,3 +68,53 @@ variable "alert_email" {
   type        = string
   sensitive   = true
 }
+
+# --- Variables del ambiente Dev ---
+
+variable "dev_resource_group_name" {
+  description = "Nombre del Resource Group del ambiente Dev en Azure"
+  type        = string
+  default     = "rg-timecheck-dev"
+}
+
+variable "dev_server_name" {
+  description = "Nombre único del servidor PostgreSQL de Dev"
+  type        = string
+  default     = "timecheck-db-dev-equipo-idc"
+}
+
+variable "dev_db_name" {
+  description = "Nombre de la base de datos de Dev"
+  type        = string
+  default     = "timecheck_dev"
+}
+
+variable "dev_admin_username" {
+  description = "Usuario administrador de PostgreSQL en Dev"
+  type        = string
+  default     = "timecheck_dev_admin"
+}
+
+variable "dev_admin_password" {
+  description = "Contraseña del administrador de PostgreSQL en Dev"
+  type        = string
+  sensitive   = true
+}
+
+variable "dev_api_app_name" {
+  description = "Nombre del App Service para el Backend en Dev"
+  type        = string
+  default     = "timecheck-api-dev-equipo-idc"
+}
+
+variable "dev_web_app_name" {
+  description = "Nombre del App Service para el Frontend en Dev"
+  type        = string
+  default     = "timecheck-web-dev-equipo-idc"
+}
+
+variable "dev_jwt_secret" {
+  description = "Clave secreta independiente para firmar tokens JWT en Dev"
+  type        = string
+  sensitive   = true
+}
