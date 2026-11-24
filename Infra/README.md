@@ -151,4 +151,4 @@ POSTGRES_PASSWORD=<PASSWORD_ADMIN>
 4. **Alertas:** Portal de Azure → **Monitor → Alertas** → verificar las reglas `alert-timecheck-api-5xx` y `alert-timecheck-api-health`.
 
 ---
-Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30 · Issue #31
+Issue #11 · PR #13 · Issue #12 · PR #27 · Issue #29 · PR #30 · Issue #31 · PR #32

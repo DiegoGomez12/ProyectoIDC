@@ -38,7 +38,7 @@ jobs:
         run: npm ci
 
       - name: Correr pruebas con cobertura
-        run: npx jest --coverage
+        run: npx jest --coverage --collectCoverageFrom='src/**/*.js'
   frontend:
     name: Frontend - pruebas
     runs-on: ubuntu-latest
@@ -123,7 +123,7 @@ jobs:
     name: Deploy Dev - Azure App Service
     needs: docker
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    environment: dev
+    environment: development
     runs-on: ubuntu-latest
     steps:
       - name: Disparar Webhook de Backend Dev (timecheck-api-dev)
@@ -151,6 +151,16 @@ jobs:
           done
           echo "El Backend Dev no respondió /health a tiempo"
           exit 1
+
+      - name: Verificar conexión a la BD en Dev
+        env:
+          API_URL: ${{ vars.VITE_API_URL_DEV }}
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API_URL/api/auth/login" \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"smoke@test.invalid","password":"no-existe"}')
+          echo "Respuesta: $code"
+          test "$code" = "401"
 
   deploy-prod:
     name: Deploy Prod - Azure App Service

@@ -1,19 +1,19 @@
 # Integración y Despliegue Continuo (GitHub Actions)
 
 Pipeline que ejecuta las pruebas automáticamente (con reporte de cobertura en Backend), construye y sube las imágenes a Docker Hub, despliega automáticamente a **Dev** y solicita aprobación manual para desplegar a **Producción** en Azure App Service.
-Origen: Issue #7 · PR #22 · Issue #8 · PR #23 · Issue #10 · PR #28 · Issue #12 · PR #27 · Issue #31
+Origen: Issue #7 · PR #22 · Issue #8 · PR #23 · Issue #10 · PR #28 · Issue #12 · PR #27 · Issue #31 · PR #32
 
 ## ¿Cuándo corre?
 - En cada **Pull Request** hacia `main`: ejecuta pruebas (con cobertura en Backend) y valida el build de las imágenes Docker (sin subir ni desplegar).
-- En cada **push a `main`** (después de un merge): ejecuta pruebas, publica imágenes en Docker Hub, despliega automáticamente a **Dev** (`dev`) y pausa esperando aprobación manual para desplegar a **Producción** (`production`).
+- En cada **push a `main`** (después de un merge): ejecuta pruebas, publica imágenes en Docker Hub, despliega automáticamente a **Dev** (`development`) y pausa esperando aprobación manual para desplegar a **Producción** (`production`).
 
 ## Jobs
 | Job | Qué hace |
 |---|---|
-| `Backend - pruebas` | Instala Node 24, `npm ci` y `npx jest --coverage` en `backend/` (Jest + Supertest + tabla de cobertura). |
+| `Backend - pruebas` | Instala Node 24, `npm ci` y `npx jest --coverage --collectCoverageFrom='src/**/*.js'` en `backend/` (Jest + Supertest + tabla de cobertura real). |
 | `Frontend - pruebas` | Instala Node 24, `npm ci` y `npm test` en `frontend/` (Vitest + React Testing Library). |
 | `Docker - Build y Push` | Compila Backend (`timecheck-api:dev` / `:latest`) y Frontend para Dev (`timecheck-web:dev` con `VITE_API_URL_DEV`) y Prod (`timecheck-web:latest` con `VITE_API_URL`). En PR valida compilación; en `main` sube a Docker Hub. |
-| `Deploy Dev - Azure App Service` | Solo corre en `main` tras `docker`. Despliega automáticamente al ambiente `dev`, dispara sus webhooks y verifica `/health` del Backend Dev. |
+| `Deploy Dev - Azure App Service` | Solo corre en `main` tras `docker`. Despliega automáticamente al ambiente `development`, dispara sus webhooks, verifica `/health` y valida conexión a la BD (`POST /api/auth/login` → `401`). |
 | `Deploy Prod - Azure App Service` | Solo corre en `main` tras `deploy-dev`. Pausa esperando aprobación manual en `production`, dispara los webhooks de Prod y verifica `/health` del Backend Prod. |
 
 Las pruebas del backend y del frontend no usan base de datos (los modelos y llamadas `fetch` se simulan), por eso no necesitan Postgres ni secrets. Los jobs de Docker y Deploy usan los secrets y variables configurados en el repositorio (ver abajo).
@@ -26,7 +26,7 @@ En `Settings > Secrets and variables > Actions`:
 - **Variables (Repository):**
   - `VITE_API_URL_DEV`: URL pública del backend Dev en Azure (`https://timecheck-api-dev-equipo-idc.azurewebsites.net`).
   - `VITE_API_URL`: URL pública del backend Prod en Azure (`https://timecheck-api-equipo-idc.azurewebsites.net`).
-- **Environment `dev` (`Settings > Environments > dev`, automático sin aprobador):**
+- **Environment `development` (`Settings > Environments > development`, automático sin aprobador):**
   - `AZURE_API_DEV_WEBHOOK_URL`: URL del webhook de despliegue continuo del App Service Backend Dev.
   - `AZURE_WEB_DEV_WEBHOOK_URL`: URL del webhook de despliegue continuo del App Service Frontend Dev.
 - **Environment `production` (`Settings > Environments > production`, con *Required reviewers*):**
