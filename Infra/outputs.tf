@@ -22,3 +22,13 @@ output "frontend_url" {
   description = "URL pública de la aplicación Frontend"
   value       = "https://${azurerm_linux_web_app.frontend.default_hostname}"
 }
+
+output "log_analytics_workspace" {
+  description = "Nombre del Log Analytics Workspace"
+  value       = azurerm_log_analytics_workspace.law.name
+}
+
+output "application_insights_name" {
+  description = "Nombre del recurso Application Insights"
+  value       = azurerm_application_insights.ai.name
+}

@@ -62,3 +62,9 @@ variable "jwt_expires_in" {
   type        = string
   default     = "10h"
 }
+
+variable "alert_email" {
+  description = "Correo electrónico para recibir alertas de errores 5xx en Azure Monitor"
+  type        = string
+  sensitive   = true
+}
