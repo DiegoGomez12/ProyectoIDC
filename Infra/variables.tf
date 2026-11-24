@@ -33,3 +33,32 @@ variable "admin_password" {
   type        = string
   sensitive   = true
 }
+
+variable "dockerhub_username" {
+  description = "Nombre de usuario en Docker Hub"
+  type        = string
+}
+
+variable "api_app_name" {
+  description = "Nombre del App Service para el Backend"
+  type        = string
+  default     = "timecheck-api-equipo-idc"
+}
+
+variable "web_app_name" {
+  description = "Nombre del App Service para el Frontend"
+  type        = string
+  default     = "timecheck-web-equipo-idc"
+}
+
+variable "jwt_secret" {
+  description = "Clave secreta para firmar los tokens JWT"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_expires_in" {
+  description = "Tiempo de expiración del token JWT"
+  type        = string
+  default     = "10h"
+}
