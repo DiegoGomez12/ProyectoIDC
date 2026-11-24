@@ -6,6 +6,7 @@ if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
     const { useAzureMonitor } = require('@azure/monitor-opentelemetry');
     const { registerInstrumentations } = require('@opentelemetry/instrumentation');
     const { ExpressInstrumentation } = require('@opentelemetry/instrumentation-express');
+    const { identificarUsuario } = require('../utils/telemetria');
 
     useAzureMonitor({
       azureMonitorExporterOptions: {
@@ -13,6 +14,9 @@ if (process.env.APPLICATIONINSIGHTS_CONNECTION_STRING) {
       },
       enableLiveMetrics: true,
       enableStandardMetrics: true,
+      instrumentationOptions: {
+        http: { enabled: true, applyCustomAttributesOnSpan: identificarUsuario },
+      },
     });
 
     // Agrega la ruta al nombre de cada petición (ej. "GET /api/usuarios/:id")

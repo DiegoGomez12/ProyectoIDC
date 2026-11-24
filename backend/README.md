@@ -40,6 +40,7 @@ backend/
 │   ├── routes/          # URL → middleware → controlador
 │   └── utils/           # Funciones puras (cálculo de horas trabajadas)
 └── tests/               # Pruebas con Jest + Supertest (el modelo se simula)
+│   └── utils/           # Funciones puras (cálculo de horas y usuario en la telemetría)
 ```
 
 ## Endpoints
@@ -139,6 +140,7 @@ npx jest --coverage --collectCoverageFrom='src/**/*.js'
 | `tests/asistencias.test.js` | Check-in / check-out y reglas de negocio (no doble entrada, no salida sin entrada) |
 | `tests/asistencia.model.test.js` | El modelo devuelve `horas_trabajadas` como número, o `null` si la jornada sigue activa |
 | `tests/tiempo.test.js` | Cálculo de horas: redondeo, zonas horarias, medianoche, horario de verano y errores (Issue #6) |
+| `tests/telemetria.test.js` | La telemetría solo envía UUID y rol, y nada si no hay sesión |
 
 ## Seguridad de dependencias (`npm audit`)
 `@azure/monitor-opentelemetry` arrastra de forma transitiva 2 avisos moderados en `@opentelemetry/instrumentation-http` (`GHSA-3v2p-hm54-8qcq`), relacionados con credenciales enviadas en la URL. Esta API recibe autenticación únicamente por headers (`Authorization: Bearer`) y body JSON, por lo que no se ve afectada; conviene actualizar el paquete cuando Azure publique la versión corregida.
