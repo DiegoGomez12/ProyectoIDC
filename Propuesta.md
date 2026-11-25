@@ -48,7 +48,6 @@ classDiagram
         +registrarEntrada(usuarioId)
         +registrarSalida(usuarioId)
         +obtenerRegistrosPorUsuario(usuarioId)
-        +obtenerRegistrosPorFecha(fecha)
     }
 
     Usuario "1" -- "*" Asistencia : registra
